@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card card-custom shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4" 
+                     style="background: linear-gradient(135deg, #003366 0%, #00509e 100%);">
+                    <h3 class="mb-0"><i class="fas fa-user-lock me-2"></i>Acceso al Sistema</h3>
+                </div>
+                <div class="card-body p-5">
+                    
+                    <p class="text-muted text-center mb-4">Ingrese sus credenciales corporativas</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark">
+                                <i class="fas fa-sign-in-alt me-2"></i>INGRESAR
+                            </button>
+                        </div>
+                    </form>
+                    
+                </div>
+                <div class="card-footer text-center py-3 bg-light">
+                    <small class="text-muted">Taller Goodyear Santos Saldivar</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

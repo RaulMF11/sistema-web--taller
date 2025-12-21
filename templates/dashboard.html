@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container pb-5">
+    <h2 class="mb-4 text-primary"><i class="fas fa-chart-line me-2"></i>Dashboard Administrativo</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Total Atenciones</h5>
+                    <p class="card-text display-4 fw-bold">{{ total_diagnosticos }}</p>
+                    <small><i class="fas fa-car"></i> Vehículos diagnosticados</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Precisión IA</h5>
+                    <p class="card-text display-4 fw-bold">{{ precision_ia }}%</p>
+                    <small><i class="fas fa-check-double"></i> Basado en {{ total_validades }} validaciones</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-dark bg-warning mb-3 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Estado del Endpoint</h5>
+                    <p class="card-text display-6 fw-bold">ONLINE 🟢</p>
+                    <small>Azure ML Service</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 5 Fallas Recurrentes</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartFallas"></canvas> </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Flota por Marcas</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartMarcas"></canvas> </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Función para decodificar caracteres especiales de HTML si es necesario
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        try {
+            // --- GRÁFICO 1: FALLAS (BARRAS) ---
+            var ctxFallas = document.getElementById('chartFallas').getContext('2d');
+            var chartFallas = new Chart(ctxFallas, {
+                type: 'bar',
+                data: {
+                    // Usamos 'safe' y aseguramos que sea una lista válida
+                    labels: {{ labels_fallas|safe }}, 
+                    datasets: [{
+                        label: 'Frecuencia de Fallas',
+                        data: {{ data_fallas|safe }},
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)', // Azul Bootstrap
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // --- GRÁFICO 2: MARCAS (DONA) ---
+            var ctxMarcas = document.getElementById('chartMarcas').getContext('2d');
+            var chartMarcas = new Chart(ctxMarcas, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ labels_marcas|safe }},
+                    datasets: [{
+                        data: {{ data_marcas|safe }},
+                        backgroundColor: [
+                            '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error("Error cargando gráficos:", error);
+            alert("Error mostrando gráficos. Revisa la consola (F12) para más detalles.");
+        }
+    });
+</script>
+{% endblock %}

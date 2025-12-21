@@ -139,3 +139,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- CONFIGURACIÓN DE LOGIN ---
+# Cuando haces login exitoso, te manda al Dashboard
+LOGIN_REDIRECT_URL = 'crear_diagnostico' 
+
+# Cuando haces logout, te manda a la página de login otra vez
+LOGOUT_REDIRECT_URL = 'login'
+
+# URL de la página de login (para proteger vistas)
+LOGIN_URL = 'login'
