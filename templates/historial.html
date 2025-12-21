@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card card-custom">
+    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Atenciones</h3>
+        <span class="badge bg-warning text-dark">{{ diagnosticos.count }} Registros</span>
+    </div>
+    <div class="card-body">
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Vehículo</th>
+                        <th>Falla Detectada</th>
+                        <th>Confianza IA</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for diag in diagnosticos %}
+                    <tr>
+                        <td>{{ diag.fecha_consulta|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <div class="fw-bold">{{ diag.marca }} {{ diag.modelo }}</div>
+                            <small class="text-muted">{{ diag.placa }}</small>
+                        </td>
+                        <td>
+                            <span class="text-danger fw-bold">{{ diag.ia_falla_predicha }}</span>
+                            <br>
+                            <small>{{ diag.ia_subfalla_predicha }}</small>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 5px; width: 100px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ diag.ia_confianza|floatformat:2 }}00%"></div>
+                            </div>
+                            <small>{{ diag.ia_confianza|floatformat:2 }}</small>
+                        </td>
+                        <td>
+                            {% if diag.es_correcto %}
+                                <span class="badge bg-success">Validado</span>
+                            {% elif diag.es_correcto is False %}
+                                <span class="badge bg-danger">Incorrecto</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'detalle_diagnostico' diag.id_diagnostico %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                            <p>No hay diagnósticos registrados aún.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import DiagnosticoForm
+from .models import Diagnosticos
+from django.shortcuts import render, redirect, get_object_or_404
 import requests
 import json
 import os
@@ -90,3 +92,34 @@ def crear_diagnostico(request):
         form = DiagnosticoForm()
 
     return render(request, 'diagnostico_form.html', {'form': form})
+
+def historial_diagnosticos(request):
+    # 1. Obtener todos los diagnósticos ordenados del más reciente al más antiguo
+    lista_diagnosticos = Diagnosticos.objects.all().order_by('-fecha_consulta')
+    
+    # 2. Renderizar la plantilla enviando la lista
+    return render(request, 'historial.html', {
+        'diagnosticos': lista_diagnosticos
+    })
+    
+def detalle_diagnostico(request, id_diagnostico):
+    # Buscamos el diagnóstico por su ID único
+    diagnostico = get_object_or_404(Diagnosticos, pk=id_diagnostico)
+    
+    # LÓGICA DE VALIDACIÓN (FEEDBACK)
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        
+        if accion == 'validar':
+            diagnostico.es_correcto = True
+            messages.success(request, '¡Diagnóstico validado como CORRECTO!')
+        
+        elif accion == 'rechazar':
+            diagnostico.es_correcto = False
+            # Aquí podríamos guardar cuál fue la falla real, por ahora solo marcamos incorrecto
+            messages.info(request, 'Diagnóstico marcado como INCORRECTO. Gracias por el feedback.')
+            
+        diagnostico.save()
+        return redirect('historial')
+
+    return render(request, 'detalle_diagnostico.html', {'diag': diagnostico})
