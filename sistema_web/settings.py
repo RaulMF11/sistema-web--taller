@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-++j2+bt($1+d=o@yx6)59)yreymix=$l7=mi7y%bd^$j(6ycuv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -51,6 +51,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -149,3 +150,10 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # URL de la página de login (para proteger vistas)
 LOGIN_URL = 'login'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# 3. CRÍTICO: Permitir que Railway envíe formularios seguros (Login/Post)
+# Esto evita el error "CSRF verification failed"
+CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
