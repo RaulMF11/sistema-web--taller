@@ -1,0 +1,17 @@
+# 1. Ignorar el entorno virtual (son miles de archivos innecesarios)
+venv/
+env/
+
+# 2. Ignorar archivos compilados de Python
+__pycache__/
+*.py[cod]
+
+# 3. SEGURIDAD: NUNCA subir las claves de Azure
+.env
+
+# 4. Ignorar base de datos local (si se crea alguna)
+db.sqlite3
+
+# 5. Ignorar archivos de sistema operativo
+.DS_Store
+Thumbs.db

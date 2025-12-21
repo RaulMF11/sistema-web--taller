@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %} 
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        {% if resultado %}
+        <div class="card card-custom border-success mb-5">
+            <div class="card-header bg-success text-white text-center py-4">
+                <h2 class="mb-0"><i class="fas fa-check-circle me-2"></i>Diagnóstico Finalizado</h2>
+            </div>
+            <div class="card-body p-5">
+                
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center border-end">
+                        <h6 class="text-muted text-uppercase">Falla Detectada</h6>
+                        <h1 class="display-4 text-danger fw-bold">{{ resultado.falla }}</h1>
+                        <span class="badge bg-warning text-dark fs-6 mt-2">{{ resultado.subfalla }}</span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Nivel de Confianza de la IA</h5>
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: {{ resultado.confianza }}%;" 
+                                 aria-valuenow="{{ resultado.confianza }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ resultado.confianza }}%
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2 small">La IA está {{ resultado.confianza }}% segura de este diagnóstico.</p>
+                        
+                        <ul class="list-group mt-4">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Gravedad Estimada
+                                <span class="badge bg-danger rounded-pill">{{ resultado.gravedad }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="alert alert-light border border-primary shadow-sm">
+                    <h4 class="alert-heading text-primary"><i class="fas fa-tools me-2"></i>Solución Recomendada:</h4>
+                    <p class="mb-0 fs-5">{{ resultado.solucion }}</p>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-5">
+                    <a href="{% url 'crear_diagnostico' %}" class="btn btn-outline-secondary btn-lg px-5">
+                        <i class="fas fa-undo me-2"></i>Nuevo Diagnóstico
+                    </a>
+                    <button onclick="window.print()" class="btn btn-primary-custom btn-lg px-5">
+                        <i class="fas fa-print me-2"></i>Imprimir Reporte
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        
+        {% else %}
+        
+        <div class="card card-custom">
+            <div class="card-header card-header-custom text-center">
+                <h3 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Módulo de Diagnóstico Inteligente</h3>
+            </div>
+            
+            <div class="card-body p-5">
+                <form method="post" id="aiForm">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6 border-end">
+                            <h5 class="text-primary mb-3"><i class="fas fa-car me-2"></i>Identificación del Vehículo</h5>
+                            
+                            <div class="row">
+                                <div class="col-6">{{ form.placa|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.marca|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">{{ form.modelo|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.anio|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">{{ form.kilometraje|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.ultimo_mantenimiento|as_crispy_field }}</div>
+                            </div>
+
+                            <hr class="my-4">
+                            
+                            <h5 class="text-primary mb-3"><i class="fas fa-comment-medical me-2"></i>Reporte del Conductor</h5>
+                            {{ form.descripcion_sintomas|as_crispy_field }}
+                        </div>
+
+                        <div class="col-md-6 bg-light p-4 rounded-3">
+                            <h5 class="text-danger mb-3"><i class="fas fa-microchip me-2"></i>Lectura de Sensores (Scanner)</h5>
+                            
+                            <div class="alert alert-info py-2 small">
+                                <i class="fas fa-info-circle"></i> Ingrese los valores obtenidos del scanner OBD-II.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">{{ form.sensor_rpm|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.sensor_velocidad|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">{{ form.sensor_temperatura_motor|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.sensor_presion_aceite|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">{{ form.sensor_voltaje_bateria|as_crispy_field }}</div>
+                                <div class="col-6">{{ form.sensor_nivel_combustible|as_crispy_field }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-5">
+                        <button type="submit" class="btn btn-primary-custom btn-lg" id="btnAnalizar">
+                            <span id="btnText"><i class="fas fa-brain me-2"></i>EJECUTAR ANÁLISIS IA</span>
+                            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        {% endif %} </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Script simple para mostrar animación de carga
+    document.getElementById('aiForm').addEventListener('submit', function() {
+        var btn = document.getElementById('btnAnalizar');
+        var text = document.getElementById('btnText');
+        var spinner = document.getElementById('btnSpinner');
+        
+        // Desactivar botón y cambiar texto
+        btn.disabled = true;
+        text.innerText = " Procesando en la Nube...";
+        spinner.classList.remove('d-none');
+    });
+</script>
+{% endblock %}
