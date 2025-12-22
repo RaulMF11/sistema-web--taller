@@ -154,6 +154,3 @@ LOGIN_URL = 'login'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# 3. CRÍTICO: Permitir que Railway envíe formularios seguros (Login/Post)
-# Esto evita el error "CSRF verification failed"
-CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
