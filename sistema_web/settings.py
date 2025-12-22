@@ -154,3 +154,7 @@ LOGIN_URL = 'login'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.azurewebsites.net',          # <--- COMODÍN SALVAVIDAS (Cubre cualquier subdominio de Azure)
+    'https://sistema-taller-goodyear-afdad3a9fucpcccq.northcentralus-01.azurewebsites.net' # Tu URL específica (por si acaso)
+]
