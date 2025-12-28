@@ -1,29 +1,70 @@
 from django import forms
-from .models import Diagnosticos, Marcas, Modelos, Vehiculos
+from .models import Diagnosticos, Marcas, Modelos
 
 class DiagnosticoForm(forms.ModelForm):
-    # --- CAMPOS EXTRA (No están en BD, solo para la Interfaz) ---
-    # Estos crean los desplegables bonitos para que el mecánico elija
+    # --- 1. CAMPOS DE INTERFAZ (UI) ---
+    # Estos NO se guardan en BD, solo sirven para que el usuario elija bonito.
+    
+    # Campo para ESCRIBIR la placa (Permite autos nuevos)
+    placa = forms.CharField(
+        label="Placa del Vehículo", 
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: ABC-123'})
+    )
+
     marca_select = forms.ModelChoiceField(
         queryset=Marcas.objects.all(),
         label="Seleccionar Marca",
-        required=False,
+        required=True, # Es opcional porque lo que importa es el hidden 'marca'
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_marca_select'})
     )
     
     modelo_select = forms.ModelChoiceField(
-        queryset=Modelos.objects.all(), # Idealmente se filtra con JS
+        queryset=Modelos.objects.all(),
         label="Seleccionar Modelo",
-        required=False,
+        required=True,
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_modelo_select'})
     )
+    # 3. AÑO (Etiqueta cambiada y Obligatorio)
+    anio = forms.IntegerField(
+        label="Año de Fabricación", # <--- CAMBIO DE TÍTULO
+        required=True,              # <--- AHORA ES OBLIGATORIO
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2015'})
+    )
+    # --- 4. DATOS TÉCNICOS (AHORA OBLIGATORIOS) ---
+    kilometraje = forms.IntegerField(
+        label="Kilometraje Actual",
+        required=True, # <--- OBLIGATORIO
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
 
+    ultimo_mantenimiento = forms.DateField(
+        label="Último Mantenimiento",
+        required=True, # <--- OBLIGATORIO
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+
+    descripcion_sintomas = forms.CharField(
+        label="Descripción del Problema",
+        required=True, # <--- OBLIGATORIO
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Describe el ruido, olor o comportamiento...'})
+    )
+    
+    # NUEVO CAMPO: Propietario
+    propietario = forms.CharField(
+        label="Nombre del Cliente (Propietario)",
+        required=False, # Opcional, si no lo llenan ponemos "Cliente Taller"
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'})
+    )
+    
     class Meta:
         model = Diagnosticos
+        # --- 2. CAMPOS REALES (BD) ---
         fields = [
-            'placa_ref',  # <--- CORREGIDO: Ahora usamos la llave foránea
-            'marca',      # Campo de texto (se llenará automático con JS)
-            'modelo',     # Campo de texto (se llenará automático con JS)
+            # NOTA: Quitamos 'placa_ref' de aquí porque usaremos 'placa' (texto)
+            'marca',      # Oculto (se llena con JS)
+            'modelo',     # Oculto (se llena con JS)
             'anio', 
             'kilometraje', 
             'ultimo_mantenimiento', 
@@ -37,13 +78,15 @@ class DiagnosticoForm(forms.ModelForm):
         ]
         
         widgets = {
+            # CAMPOS OCULTOS (La IA necesita texto, no IDs)
+            'marca': forms.HiddenInput(attrs={'id': 'id_marca_texto'}),
+            'modelo': forms.HiddenInput(attrs={'id': 'id_modelo_texto'}),
+            
+            # FORMATO Y ESTILOS
             'descripcion_sintomas': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Describe el ruido, olor o comportamiento...'}),
             'ultimo_mantenimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            # Ocultamos los campos de texto porque el usuario usará los desplegables
-            'marca': forms.HiddenInput(),
-            'modelo': forms.HiddenInput(),
-            'placa_ref': forms.Select(attrs={'class': 'form-select'}), # Desplegable de placas registradas
-            # Estilos para sensores
+            
+            # SENSORES
             'sensor_rpm': forms.NumberInput(attrs={'class': 'form-control'}),
             'sensor_presion_aceite': forms.NumberInput(attrs={'class': 'form-control'}),
             'sensor_temperatura_motor': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -53,8 +96,12 @@ class DiagnosticoForm(forms.ModelForm):
             'anio': forms.NumberInput(attrs={'class': 'form-control'}),
             'kilometraje': forms.NumberInput(attrs={'class': 'form-control'}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Etiqueta opcional para que se entienda mejor
-        self.fields['placa_ref'].label = "Placa del Vehículo (Registrados)"
+        
+        # EXCLUIMOS placa_ref (FK) para manejarlo manualmente en la vista
+        exclude = [
+            'placa_ref', 'usuario', 
+            'ia_falla_predicha', 'ia_subfalla_predicha', 'solucion_predicha', 
+            'gravedad_predicha', 'ia_confianza', 'es_correcto', 
+            'falla_real', 'subfalla_real', 'gravedad_real', 'solucion_real', 
+            'fecha_consulta'
+        ]

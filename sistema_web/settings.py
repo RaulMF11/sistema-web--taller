@@ -157,4 +157,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CSRF_TRUSTED_ORIGINS = [
     'https://*.azurewebsites.net',          # <--- COMODÍN SALVAVIDAS (Cubre cualquier subdominio de Azure)
     'https://sistema-taller-goodyear-afdad3a9fucpcccq.northcentralus-01.azurewebsites.net' # Tu URL específica (por si acaso)
+    'http://127.0.0.1:8000',  # <--- AGREGA ESTA LÍNEA (Local)
+    'http://localhost:8000',
 ]

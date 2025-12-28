@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="fw-bold text-primary">
+                <i class="fas fa-user-circle me-2"></i>Hola, {{ user.first_name|default:user.username }}
+            </h2>
+            <p class="text-muted">Panel de Operaciones Técnicas - Taller Goodyear</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'crear_diagnostico' %}" class="btn btn-warning btn-lg shadow fw-bold">
+                <i class="fas fa-plus-circle me-2"></i>NUEVO DIAGNÓSTICO
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1">Total Diagnosticados</h6>
+                            <h2 class="mb-0 fw-bold text-dark">{{ total }}</h2>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                            <i class="fas fa-car fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1">Precisión Personal</h6>
+                            <h2 class="mb-0 fw-bold text-dark">{{ precision }}%</h2>
+                            <small class="text-success fontsize-sm">En {{ validados }} casos validados</small>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success">
+                            <i class="fas fa-bullseye fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1">Estado de IA</h6>
+                            <h2 class="mb-0 fw-bold text-dark">En Línea</h2>
+                            <small class="text-info">Azure Endpoint: Activo</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle text-info">
+                            <i class="fas fa-server fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-history me-2"></i>Mis Últimos Trabajos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Fecha</th>
+                            <th>Vehículo</th>
+                            <th>Falla Detectada</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for diag in recientes %}
+                        <tr>
+                            <td class="ps-4">{{ diag.fecha_consulta|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="fw-bold">{{ diag.placa_ref.placa }}</div>
+                                <small class="text-muted">{{ diag.marca }} {{ diag.modelo }}</small>
+                            </td>
+                            <td>
+                                {% if diag.es_correcto == False %}
+                                    <span class="text-decoration-line-through text-muted">{{ diag.ia_falla_predicha }}</span>
+                                    <br><span class="text-success fw-bold">{{ diag.falla_real }}</span>
+                                {% else %}
+                                    {{ diag.ia_falla_predicha }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <i class="fas fa-user me-1 text-muted"></i> {{ diag.placa_ref.propietario }}
+                            </td>
+                            <td>
+                                {% if diag.es_correcto is None %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif diag.es_correcto %}
+                                    <span class="badge bg-success">Correcto</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Corregido</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'detalle_diagnostico' diag.id_diagnostico %}" class="btn btn-sm btn-outline-primary">
+                                    Ver Detalle
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                                <p>Aún no has realizado diagnósticos.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white text-center py-3">
+            <a href="{% url 'historial' %}" class="text-decoration-none fw-bold">Ver Historial Completo <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+</div>
+{% endblock %}

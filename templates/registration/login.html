@@ -1,36 +1,135 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card card-custom shadow-lg border-0">
-                <div class="card-header bg-primary text-white text-center py-4" 
-                     style="background: linear-gradient(135deg, #003366 0%, #00509e 100%);">
-                    <h3 class="mb-0"><i class="fas fa-user-lock me-2"></i>Acceso al Sistema</h3>
-                </div>
-                <div class="card-body p-5">
-                    
-                    <p class="text-muted text-center mb-4">Ingrese sus credenciales corporativas</p>
+{% block content_login %}
 
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ form|crispy }}
-                        
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark">
-                                <i class="fas fa-sign-in-alt me-2"></i>INGRESAR
-                            </button>
-                        </div>
-                    </form>
-                    
+<style>
+    /* Estilos exclusivos para la pantalla de Login */
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Fondo degradado corporativo Goodyear */
+        background: radial-gradient(circle at center, #0042b5 0%, #001f5c 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Elementos decorativos de fondo (Neumáticos abstractos) */
+    .bg-circle {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 209, 0, 0.1);
+        z-index: 0;
+    }
+    .c1 { width: 600px; height: 600px; top: -100px; right: -100px; }
+    .c2 { width: 400px; height: 400px; bottom: -50px; left: -50px; border-color: rgba(255, 255, 255, 0.05); }
+
+    /* Tarjeta de Login */
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 0; /* Padding controlado en hijos */
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        z-index: 10;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .login-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Cabecera Amarilla */
+    .login-header {
+        background-color: #ffd100;
+        padding: 30px 20px;
+        text-align: center;
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+    }
+
+    .brand-title {
+        color: #003087;
+        font-weight: 900;
+        font-size: 1.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0;
+    }
+
+    .brand-subtitle {
+        color: #003087;
+        font-size: 0.85rem;
+        font-weight: 600;
+        opacity: 0.8;
+    }
+
+    /* Cuerpo del Formulario */
+    .login-body {
+        padding: 40px 30px;
+    }
+
+    .btn-login {
+        background-color: #003087;
+        color: white;
+        font-weight: bold;
+        padding: 12px;
+        border-radius: 50px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 48, 135, 0.3);
+    }
+
+    .btn-login:hover {
+        background-color: #001f5c;
+        transform: scale(1.02);
+        color: #ffd100;
+    }
+
+    .footer-text {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 20px;
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="bg-circle c1"></div>
+    <div class="bg-circle c2"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="mb-2">
+                <i class="fas fa-car fa-2x" style="color: #003087;"></i>
+            </div>
+            <h2 class="brand-title">Goodyear AI</h2>
+            <div class="brand-subtitle">SISTEMA INTELIGENTE</div>
+        </div>
+
+        <div class="login-body">
+            <h5 class="text-center text-muted mb-4 fw-bold">Bienvenido</h5>
+            
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-login">
+                        INGRESAR AL TALLER <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
                 </div>
-                <div class="card-footer text-center py-3 bg-light">
-                    <small class="text-muted">Taller Goodyear Santos Saldivar</small>
-                </div>
+            </form>
+
+            <div class="footer-text">
+                Santos Saldivar S.A.C. &copy; 2025
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

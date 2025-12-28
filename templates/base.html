@@ -1,139 +1,174 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistema Experto - Taller Goodyear</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
-      rel="stylesheet"
-    />
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller Goodyear - Santos Saldivar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        background-color: #f0f2f5;
-      }
-      .navbar-custom {
-        background: linear-gradient(90deg, #003366 0%, #00509e 100%);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      }
-      .navbar-brand {
-        font-weight: 700;
-        color: #ffd700 !important;
-        letter-spacing: 1px;
-      }
-      .footer {
-        background-color: #002244;
-        color: white;
-        padding: 20px 0;
-        margin-top: 50px;
-      }
-      .card-custom {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-      }
-      .card-header-custom {
-        background-color: #00509e;
-        color: white;
-        padding: 20px;
-        font-weight: 600;
-      }
-      .btn-primary-custom {
-        background-color: #ffaa00;
-        border: none;
-        color: #002244;
-        font-weight: bold;
-        padding: 12px 30px;
-        border-radius: 30px;
-        transition: all 0.3s;
-      }
-      .btn-primary-custom:hover {
-        background-color: #ffc107;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 170, 0, 0.4);
-      }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* --- ESTILOS DEL SIDEBAR --- */
+        .sidebar {
+            height: 100vh;
+            width: 260px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, #003087 0%, #001f5c 100%); /* Azul Goodyear profundo */
+            padding-top: 0;
+            color: white;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header {
+            background-color: #ffd100; /* Amarillo Goodyear */
+            padding: 20px;
+            text-align: center;
+            color: #003087;
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 10px;
+        }
+
+        .sidebar a {
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            display: block;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffd100;
+            transform: translateX(5px);
+        }
+
+        /* Clase para resaltar la página actual */
+        .sidebar a.active {
+            background-color: #ffd100;
+            color: #003087;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .user-panel {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            background-color: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            margin-left: 260px; /* Deja espacio para el sidebar */
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        /* AJUSTE LOGIN (Sin Sidebar) */
+        .no-sidebar-content {
+            margin-left: 0;
+            padding: 0;
+        }
     </style>
-  </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
-      <div class="container">
-        <a class="navbar-brand" href="#"
-          ><i class="fas fa-car-crash me-2"></i> GOODYEAR AI</a
-        >
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'crear_diagnostico' %}">Nuevo Diagnóstico</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'historial' %}">Historial</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Configuración</a>
-            </li>
-          </ul>
-          </ul> <ul class="navbar-nav">
-                {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i> {{ user.username|upper }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <form action="{% url 'logout' %}" method="post">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="{% url 'login' %}">Iniciar Sesión</a>
-                    </li>
+</head>
+<body>
+
+    {% if user.is_authenticated %}
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-tools me-2"></i>GOODYEAR AI
+            </div>
+            
+            <div class="sidebar-menu">
+                <small class="text-uppercase text-white-50 ms-3" style="font-size: 0.75rem;">Operaciones</small>
+                {% if not user.is_superuser %}
+                  <a href="{% url 'perfil_mecanico' %}" class="{% if '/mecanico/' in request.path %}active{% endif %}">
+                      <i class="fas fa-chart-line me-2" style="width:25px;"></i> Dashboard Mecánico
+                  </a>
                 {% endif %}
-            </ul>
+                
+                <a href="{% url 'crear_diagnostico' %}" class="{% if '/crear/' in request.path %}active{% endif %}">
+                    <i class="fas fa-stethoscope me-2" style="width:25px;"></i> Diagnosticar
+                </a>
+                
+                <a href="{% url 'historial' %}" class="{% if '/historial/' in request.path %}active{% endif %}">
+                    <i class="fas fa-history me-2" style="width:25px;"></i> Historial
+                </a>
+
+                {% if user.is_superuser %}
+                    <hr class="border-secondary my-3">
+                    <small class="text-uppercase text-white-50 ms-3" style="font-size: 0.75rem;">Gerencia</small>
+                    
+                    <a href="{% url 'dashboard' %}" class="{% if '/dashboard/' in request.path %}active{% endif %}">
+                        <i class="fas fa-chart-line me-2" style="width:25px;"></i> Dashboard KPI
+                    </a>
+                    <a href="/admin/core/marcas/" target="_blank">
+                        <i class="fas fa-tags me-2" style="width:25px;"></i> Marcas
+                    </a>
+                    <a href="/admin/core/vehiculos/" target="_blank">
+                        <i class="fas fa-car me-2" style="width:25px;"></i> Flota Vehicular
+                    </a>
+                    <a href="{% url 'admin:auth_user_add' %}" target="_blank">
+                        <i class="fas fa-user-plus me-2" style="width:25px;"></i> Nuevo Mecánico
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="user-panel">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-warning rounded-circle d-flex justify-content-center align-items-center text-dark fw-bold me-2" style="width: 35px; height: 35px;">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="text-truncate">
+                        <div class="fw-bold">{{ user.first_name|default:user.username }}</div>
+                        <small class="text-white-50">{% if user.is_superuser %}Admin{% else %}Mecánico{% endif %}</small>
+                    </div>
+                </div>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-light btn-sm w-100">
+                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                    </button>
+                </form>
+            </div>
         </div>
-      </div>
-    </nav>
 
-    <div class="container mt-4">{% block content %} {% endblock %}</div>
+        <div class="main-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-    <footer class="footer text-center">
-      <div class="container">
-        <p class="mb-0">
-          © 2025 Santos Saldivar S.A.C. - Sistema de Inteligencia Artificial
-        </p>
-        <small>Desarrollado para Tesis de Ingeniería</small>
-      </div>
-    </footer>
+            {% block content %}{% endblock %}
+        </div>
+
+    {% else %}
+        <div class="no-sidebar-content">
+            {% block content_login %}{% endblock %}
+        </div>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% block scripts %}{% endblock %}
-  </body>
-</html>
+</body>
+</html> 

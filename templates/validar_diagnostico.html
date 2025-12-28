@@ -1,88 +1,148 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>🔎 Validar Predicción de la IA</h2>
-    
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card bg-light border-info">
-                <div class="card-header bg-info text-white">La IA sugiere:</div>
-                <div class="card-body">
-                    <h3>{{ prediccion_ia.falla_predicha }}</h3>
-                    <p><strong>Subfalla:</strong> {{ prediccion_ia.subfalla_predicha }}</p>
-                    <p><strong>Solución:</strong> {{ prediccion_ia.solucion_predicha }}</p>
-                    <p><strong>Gravedad:</strong> {{ prediccion_ia.gravedad_predicha }}</p>
-                    <small>Confianza: {{ prediccion_ia.confianza }}</small>
+<div class="container mt-5 mb-5">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold text-primary">
+                <i class="fas fa-clipboard-check me-2"></i>Validación del Diagnóstico IA
+            </h2>
+            <p class="text-muted">Revise los resultados del análisis y confirme su precisión.</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center g-4">
+        
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden">
+                <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #003087 0%, #0056b3 100%);">
+                    <h4 class="mb-0 fw-bold"><i class="fas fa-robot me-2"></i>La IA sugiere:</h4>
+                </div>
+                
+                <div class="card-body p-4 bg-light">
+                    <div class="text-center mb-4">
+                        <h6 class="text-uppercase text-muted small fw-bold">Falla Detectada</h6>
+                        <h1 class="display-6 fw-bold text-dark mb-0">
+                            {{ prediccion_ia.falla|default:prediccion_ia.falla_predicha }}
+                        </h1>
+                    </div>
+
+                    <ul class="list-group list-group-flush rounded shadow-sm mb-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <span><i class="fas fa-sitemap text-primary me-2"></i>Subfalla:</span>
+                            <span class="fw-semibold">{{ prediccion_ia.subfalla|default:prediccion_ia.subfalla_predicha }}</span>
+                        </li>
+                        <li class="list-group-item p-3">
+                            <div class="mb-1"><i class="fas fa-tools text-success me-2"></i>Solución:</div>
+                            <div class="fw-semibold text-dark ps-4">{{ prediccion_ia.solucion|default:prediccion_ia.solucion_predicha }}</div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <span><i class="fas fa-exclamation-triangle text-warning me-2"></i>Gravedad:</span>
+                            <span class="badge bg-warning text-dark rounded-pill">{{ prediccion_ia.gravedad|default:prediccion_ia.gravedad_predicha }}</span>
+                        </li>
+                    </ul>
+
+                    <div class="bg-white p-3 rounded shadow-sm border">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="fw-bold text-muted">Nivel de Confianza</small>
+                            <small class="fw-bold text-primary">{{ prediccion_ia.confianza }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ prediccion_ia.confianza }}%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <form action="{% url 'guardar_diagnostico_final' %}" method="POST">
-                {% csrf_token %}
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-lg h-100">
+                <div class="card-body p-5">
+                    <h4 class="fw-bold mb-4 text-center">¿Es correcto este diagnóstico?</h4>
 
-                <input type="hidden" name="marca" value="{{ datos_originales.marca }}">
-                <input type="hidden" name="modelo" value="{{ datos_originales.modelo }}">
-                <input type="hidden" name="anio" value="{{ datos_originales.anio }}">
-                <input type="hidden" name="kilometraje" value="{{ datos_originales.kilometraje }}">
-                <input type="hidden" name="ultimo_mantenimiento" value="{{ datos_originales.ultimo_mantenimiento }}">
-                <input type="hidden" name="descripcion_sintomas" value="{{ datos_originales.descripcion_sintomas }}">
-                <input type="hidden" name="ia_falla" value="{{ prediccion_ia.falla_predicha }}">
-                <input type="hidden" name="ia_subfalla" value="{{ prediccion_ia.subfalla_predicha }}">
-                <input type="hidden" name="ia_solucion" value="{{ prediccion_ia.solucion_predicha }}">
-                <input type="hidden" name="ia_gravedad" value="{{ prediccion_ia.gravedad_predicha }}">
-                <input type="hidden" name="ia_confianza" value="{{ prediccion_ia.confianza }}">
+                    <form action="{% url 'guardar_diagnostico_final' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="placa" value="{{ placa_vehiculo }}">
+                        {% for key, value in datos_originales.items %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endfor %}
+                        {% for key, value in datos_originales.items %}
+                            <input type="hidden" name="{{ key }}" value="{{ value|default:'' }}">
+                        {% endfor %}
 
-                <div class="card">
-                    <div class="card-body">
-                        <h5>¿Es correcto este diagnóstico?</h5>
+                        <input type="hidden" name="marca" value="{{ datos_originales.marca }}">
+                        <input type="hidden" name="modelo" value="{{ datos_originales.modelo }}">
+                        <input type="hidden" name="anio" value="{{ datos_originales.anio }}">
+                        <input type="hidden" name="kilometraje" value="{{ datos_originales.kilometraje }}">
+                        <input type="hidden" name="ultimo_mantenimiento" value="{{ datos_originales.ultimo_mantenimiento }}">
+                        <input type="hidden" name="descripcion_sintomas" value="{{ datos_originales.descripcion_sintomas }}">
                         
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="validacion_mecanico" id="si" value="si" checked onclick="toggleCorreccion(false)">
-                            <label class="form-check-label" for="si">✅ Sí, confirmar</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="validacion_mecanico" id="no" value="no" onclick="toggleCorreccion(true)">
-                            <label class="form-check-label" for="no">❌ No, corregir</label>
-                        </div>
-                    </div>
-                </div>
+                        <input type="hidden" name="ia_falla" value="{{ prediccion_ia.falla|default:prediccion_ia.falla_predicha }}">
+                        <input type="hidden" name="ia_subfalla" value="{{ prediccion_ia.subfalla|default:prediccion_ia.subfalla_predicha }}">
+                        <input type="hidden" name="ia_solucion" value="{{ prediccion_ia.solucion|default:prediccion_ia.solucion_predicha }}">
+                        <input type="hidden" name="ia_gravedad" value="{{ prediccion_ia.gravedad|default:prediccion_ia.gravedad_predicha }}">
+                        <input type="hidden" name="ia_confianza" value="{{ prediccion_ia.confianza }}">
 
-                <div id="panel-correccion" class="card mt-3 border-danger" style="display:none;">
-                    <div class="card-header bg-danger text-white">Corrección del Experto</div>
-                    <div class="card-body">
-                        <div class="mb-2">
-                            <label>Falla Real:</label>
-                            <select name="correccion_falla" class="form-select">
-                                {% for cat in categorias_fallas %}
-                                    <option value="{{ cat }}">{{ cat }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label>Subfalla Real:</label>
-                            <input type="text" name="correccion_subfalla" class="form-control">
-                        </div>
-                        <div class="mb-2">
-                            <label>Solución Real:</label>
-                            <textarea name="correccion_solucion" class="form-control"></textarea>
-                        </div>
-                        <div class="mb-2">
-                            <label>Gravedad Real:</label>
-                            <select name="correccion_gravedad" class="form-select">
-                                <option value="Baja">Baja</option>
-                                <option value="Media">Media</option>
-                                <option value="Alta">Alta</option>
-                                <option value="Crítica">Crítica</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+                        <div class="d-grid gap-3 mb-4">
+                            <input type="radio" class="btn-check" name="validacion_mecanico" id="si" value="si" checked onchange="toggleCorreccion(false)">
+                            <label class="btn btn-outline-success btn-lg p-3 text-start d-flex align-items-center shadow-sm" for="si">
+                                <i class="fas fa-check-circle fa-2x me-3"></i>
+                                <div>
+                                    <div class="fw-bold">Sí, confirmar diagnóstico</div>
+                                    <small>La predicción coincide con el análisis experto.</small>
+                                </div>
+                            </label>
 
-                <button type="submit" class="btn btn-primary btn-lg mt-3 w-100">Guardar Diagnóstico</button>
-            </form>
+                            <input type="radio" class="btn-check" name="validacion_mecanico" id="no" value="no" onchange="toggleCorreccion(true)">
+                            <label class="btn btn-outline-danger btn-lg p-3 text-start d-flex align-items-center shadow-sm" for="no">
+                                <i class="fas fa-times-circle fa-2x me-3"></i>
+                                <div>
+                                    <div class="fw-bold">No, corregir diagnóstico</div>
+                                    <small>La IA se equivocó, ingresaré los datos reales.</small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div id="panel-correccion" class="bg-light p-4 rounded border border-danger mb-4" style="display:none;">
+                            <h6 class="text-danger fw-bold mb-3"><i class="fas fa-edit me-2"></i>Corrección del Experto</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Falla Real:</label>
+                                <select name="correccion_falla" class="form-select" id="input_falla_real">
+                                    {% for cat in categorias_fallas %}
+                                        <option value="{{ cat }}">{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Subfalla Real:</label>
+                                <input type="text" name="correccion_subfalla" class="form-control" placeholder="Ej: Fuga en manguera superior">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Solución Real:</label>
+                                <textarea name="correccion_solucion" class="form-control" rows="2" placeholder="Ej: Reemplazo de componente..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Gravedad Real:</label>
+                                <select name="correccion_gravedad" class="form-select">
+                                    <option value="Baja">Baja</option>
+                                    <option value="Media">Media</option>
+                                    <option value="Alta">Alta</option>
+                                    <option value="Crítica">Crítica</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold" style="background-color: #003087; border: none;">
+                                <i class="fas fa-save me-2"></i>GUARDAR DIAGNÓSTICO
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -90,11 +150,41 @@
 <script>
     function toggleCorreccion(mostrar) {
         const panel = document.getElementById('panel-correccion');
-        panel.style.display = mostrar ? 'block' : 'none';
         
-        // Opcional: Hacer required los campos si se muestra
-        const inputs = panel.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => input.required = mostrar);
+        if(mostrar) {
+            panel.style.display = 'block';
+            // Animación simple de entrada
+            panel.style.opacity = 0;
+            setTimeout(() => { 
+                panel.style.transition = 'opacity 0.3s'; 
+                panel.style.opacity = 1; 
+            }, 10);
+            
+            // Hacer requerida la falla real si corrige
+            document.getElementById('input_falla_real').required = true;
+        } else {
+            panel.style.display = 'none';
+            document.getElementById('input_falla_real').required = false;
+        }
     }
 </script>
+
+<style>
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        color: white;
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(25, 135, 84, 0.3);
+    }
+    .btn-check:checked + .btn-outline-danger {
+        background-color: #dc3545;
+        color: white;
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    .btn-outline-success, .btn-outline-danger {
+        transition: all 0.2s ease-in-out;
+        border-width: 2px;
+    }
+</style>
 {% endblock %}

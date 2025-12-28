@@ -1,149 +1,228 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %} 
+{% load crispy_forms_tags %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        
-        {% if resultado %}
-        <div class="card card-custom border-success mb-5">
-            <div class="card-header bg-success text-white text-center py-4">
-                <h2 class="mb-0"><i class="fas fa-check-circle me-2"></i>Diagnóstico Finalizado</h2>
-            </div>
-            <div class="card-body p-5">
-                
-                <div class="row align-items-center">
-                    <div class="col-md-6 text-center border-end">
-                        <h6 class="text-muted text-uppercase">Falla Detectada</h6>
-                        <h1 class="display-4 text-danger fw-bold">{{ resultado.falla }}</h1>
-                        <span class="badge bg-warning text-dark fs-6 mt-2">{{ resultado.subfalla }}</span>
-                    </div>
+<div class="container py-4">
+    <div class="card card-custom shadow-lg border-0">
+        <div class="card-header bg-white text-center py-4 border-bottom-0">
+            <h3 class="mb-0 fw-bold text-primary">
+                <i class="fas fa-stethoscope me-2"></i>Módulo de Diagnóstico Inteligente
+            </h3>
+        </div>
 
-                    <div class="col-md-6">
-                        <h5 class="mb-3">Nivel de Confianza de la IA</h5>
-                        <div class="progress" style="height: 30px;">
-                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
-                                 role="progressbar" 
-                                 style="width: {{ resultado.confianza }}%;" 
-                                 aria-valuenow="{{ resultado.confianza }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                                {{ resultado.confianza }}%
-                            </div>
+        <div class="card-body p-5">
+            <form method="post" id="aiForm">
+                {% csrf_token %}
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6 border-end">
+                        <h5 class="text-primary mb-3"><i class="fas fa-car me-2"></i>Identificación del Vehículo</h5>
+                        <div class="row">
+                            <div class="col-6">{{ form.placa|as_crispy_field }}</div>
+                            <div class="col-6">{{ form.propietario|as_crispy_field }}</div>
                         </div>
-                        <p class="text-muted mt-2 small">La IA está {{ resultado.confianza }}% segura de este diagnóstico.</p>
-                        
-                        <ul class="list-group mt-4">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Gravedad Estimada
-                                <span class="badge bg-danger rounded-pill">{{ resultado.gravedad }}</span>
-                            </li>
-                        </ul>
+                        <div class="row">
+                            <div class="col-6">
+                                {{ form.marca_select|as_crispy_field }} 
+                                {{ form.marca }} </div>
+                            <div class="col-6">
+                                {{ form.modelo_select|as_crispy_field }} 
+                                {{ form.modelo }} </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">{{ form.anio|as_crispy_field }}</div>
+                            <div class="col-6">{{ form.kilometraje|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">{{ form.ultimo_mantenimiento|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 bg-light p-4 rounded-3">
+                        <h5 class="text-danger mb-3"><i class="fas fa-microchip me-2"></i>Lectura de Sensores (Scanner)</h5>
+                        <div class="alert alert-info py-2 small">
+                            <i class="fas fa-info-circle"></i> Ingrese los valores obtenidos del scanner OBD-II.
+                        </div>
+                        <div class="row">
+                            <div class="col-6">{{ form.sensor_rpm|as_crispy_field }}</div>
+                            <div class="col-6">{{ form.sensor_velocidad|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">{{ form.sensor_temperatura_motor|as_crispy_field }}</div>
+                            <div class="col-6">{{ form.sensor_presion_aceite|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">{{ form.sensor_voltaje_bateria|as_crispy_field }}</div>
+                            <div class="col-6">{{ form.sensor_nivel_combustible|as_crispy_field }}</div>
+                        </div>
                     </div>
                 </div>
 
-                <hr class="my-4">
-
-                <div class="alert alert-light border border-primary shadow-sm">
-                    <h4 class="alert-heading text-primary"><i class="fas fa-tools me-2"></i>Solución Recomendada:</h4>
-                    <p class="mb-0 fs-5">{{ resultado.solucion }}</p>
+                <div class="row g-4 mt-3">
+                    <div class="col-12">
+                        <h5 class="text-secondary mb-3"><i class="fas fa-comment-medical me-2"></i>Descripción del Problema</h5>
+                        {{ form.descripcion_sintomas|as_crispy_field }}
+                    </div>
                 </div>
 
-                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-5">
-                    <a href="{% url 'crear_diagnostico' %}" class="btn btn-outline-secondary btn-lg px-5">
-                        <i class="fas fa-undo me-2"></i>Nuevo Diagnóstico
-                    </a>
-                    <button onclick="window.print()" class="btn btn-primary-custom btn-lg px-5">
-                        <i class="fas fa-print me-2"></i>Imprimir Reporte
+                <div class="d-grid gap-2 mt-5 d-md-flex justify-content-md-end align-items-center">
+                    <button type="submit" class="btn-execute-ai flex-grow-1 py-3" id="btnAnalizar">
+                        <span id="btnText"><i class="fas fa-brain me-3"></i>EJECUTAR ANÁLISIS IA</span>
+                        <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
-
-            </div>
+            </form>
         </div>
-        
-        {% else %}
-        
-        <div class="card card-custom">
-            <div class="card-header card-header-custom text-center">
-                <h3 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Módulo de Diagnóstico Inteligente</h3>
-            </div>
-            
-            <div class="card-body p-5">
-                <form method="post" id="aiForm">
-                    {% csrf_token %}
-                    
-                    <div class="row g-4">
-                        <div class="col-md-6 border-end">
-                            <h5 class="text-primary mb-3"><i class="fas fa-car me-2"></i>Identificación del Vehículo</h5>
-                            
-                            <div class="row">
-                                <div class="col-6">{{ form.placa|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.marca|as_crispy_field }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-6">{{ form.modelo|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.anio|as_crispy_field }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-6">{{ form.kilometraje|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.ultimo_mantenimiento|as_crispy_field }}</div>
-                            </div>
-
-                            <hr class="my-4">
-                            
-                            <h5 class="text-primary mb-3"><i class="fas fa-comment-medical me-2"></i>Reporte del Conductor</h5>
-                            {{ form.descripcion_sintomas|as_crispy_field }}
-                        </div>
-
-                        <div class="col-md-6 bg-light p-4 rounded-3">
-                            <h5 class="text-danger mb-3"><i class="fas fa-microchip me-2"></i>Lectura de Sensores (Scanner)</h5>
-                            
-                            <div class="alert alert-info py-2 small">
-                                <i class="fas fa-info-circle"></i> Ingrese los valores obtenidos del scanner OBD-II.
-                            </div>
-
-                            <div class="row">
-                                <div class="col-6">{{ form.sensor_rpm|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.sensor_velocidad|as_crispy_field }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-6">{{ form.sensor_temperatura_motor|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.sensor_presion_aceite|as_crispy_field }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-6">{{ form.sensor_voltaje_bateria|as_crispy_field }}</div>
-                                <div class="col-6">{{ form.sensor_nivel_combustible|as_crispy_field }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-grid gap-2 mt-5">
-                        <button type="submit" class="btn btn-primary-custom btn-lg" id="btnAnalizar">
-                            <span id="btnText"><i class="fas fa-brain me-2"></i>EJECUTAR ANÁLISIS IA</span>
-                            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        </button>
-                    </div>
-
-                </form>
-            </div>
-        </div>
-
-        {% endif %} </div>
+    </div>
 </div>
+
+<style>
+    .btn-execute-ai {
+        background: linear-gradient(135deg, #003087 0%, #0056b3 100%);
+        color: white;
+        font-weight: 800;
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 50px;
+        box-shadow: 0 10px 20px -10px rgba(0, 48, 135, 0.5);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-execute-ai:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px -10px rgba(0, 48, 135, 0.7);
+        background: linear-gradient(135deg, #0042b5 0%, #0069d9 100%);
+        color: #ffd100;
+    }
+    .btn-execute-ai:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Script simple para mostrar animación de carga
-    document.getElementById('aiForm').addEventListener('submit', function() {
-        var btn = document.getElementById('btnAnalizar');
-        var text = document.getElementById('btnText');
-        var spinner = document.getElementById('btnSpinner');
+    const form = document.getElementById("aiForm");
+    const inputPlaca = document.getElementById("id_placa");
+    const inputPropietario = document.getElementById("id_propietario");
+    const inputAnio = document.getElementById("id_anio");
+    const selectMarca = document.getElementById("id_marca_select");
+    const inputMarcaTexto = document.getElementById("id_marca_texto");
+    const selectModelo = document.getElementById("id_modelo_select");
+    const inputModeloTexto = document.getElementById("id_modelo_texto");
+
+    function bloquearCampos() {
+        if(inputAnio) { inputAnio.readOnly = true; inputAnio.classList.add('bg-light'); }
+        // if(inputPropietario) { inputPropietario.readOnly = true; inputPropietario.classList.add('bg-light'); }
+        if(selectMarca) selectMarca.disabled = true;
+        if(selectModelo) selectModelo.disabled = true;
+    }
+
+    function desbloquearCampos() {
+        if(inputAnio) { inputAnio.readOnly = false; inputAnio.classList.remove('bg-light'); inputAnio.value = ""; }
+        if(inputPropietario) { inputPropietario.readOnly = false; inputPropietario.classList.remove('bg-light'); inputPropietario.value = ""; }
+        if(selectMarca) { selectMarca.disabled = false; selectMarca.value = ""; }
+        if(selectModelo) { selectModelo.disabled = false; selectModelo.innerHTML = '<option value="">Primero selecciona marca</option>'; }
+    }
+
+    if (form) {
+        form.addEventListener("submit", function () {
+            // DESBLOQUEAR ANTES DE ENVIAR PARA QUE DJANGO RECIBA LOS DATOS
+            if(selectMarca) selectMarca.disabled = false;
+            if(selectModelo) selectModelo.disabled = false;
+
+            var btn = document.getElementById("btnAnalizar");
+            var text = document.getElementById("btnText");
+            var spinner = document.getElementById("btnSpinner");
+            if(btn && text && spinner) {
+                btn.disabled = true;
+                text.innerText = " Procesando...";
+                spinner.classList.remove("d-none");
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. BUSCAR PLACA
+        if(inputPlaca){
+            inputPlaca.addEventListener("blur", function() {
+                const placa = inputPlaca.value.trim();
+                if(placa.length > 3) {
+                    fetch(`{% url 'ajax_buscar_placa' %}?placa=${placa}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.encontrado){
+                            // Llenar datos
+                            if(inputPropietario) inputPropietario.value = data.propietario;
+                            if(inputAnio) inputAnio.value = data.anio;
+
+                            // Llenar Marca y cargar modelos
+                            if(selectMarca) {
+                                selectMarca.value = data.marca_id;
+                                if(inputMarcaTexto) inputMarcaTexto.value = data.marca_nombre;
+                                
+                                // Cargar modelos
+                                fetch(`{% url 'ajax_load_modelos' %}?marca_id=${data.marca_id}`)
+                                .then(res => res.json())
+                                .then(modelos => {
+                                    if(selectModelo){
+                                        selectModelo.innerHTML = '';
+                                        modelos.forEach(m => {
+                                            const opt = document.createElement('option');
+                                            opt.value = m.id_modelo;
+                                            opt.textContent = m.nombre_modelo;
+                                            selectModelo.appendChild(opt);
+                                        });
+                                        selectModelo.value = data.modelo_id;
+                                        if(inputModeloTexto) inputModeloTexto.value = data.modelo_nombre;
+                                        
+                                        // BLOQUEAR AL FINAL
+                                        bloquearCampos();
+                                    }
+                                });
+                            }
+                            inputPlaca.classList.add("is-valid");
+                        } else {
+                            desbloquearCampos();
+                        }
+                    });
+                }
+            });
+        }
+
+        // 2. CAMBIO DE MARCA MANUAL
+        if (selectMarca) {
+            selectMarca.addEventListener("change", function () {
+                const marcaId = selectMarca.value;
+                if(selectMarca.selectedIndex >=0 && inputMarcaTexto) 
+                    inputMarcaTexto.value = selectMarca.options[selectMarca.selectedIndex].text;
+
+                if(selectModelo && marcaId) {
+                    selectModelo.innerHTML = '<option>Cargando...</option>';
+                    fetch(`{% url 'ajax_load_modelos' %}?marca_id=${marcaId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        selectModelo.innerHTML = '<option value="">Selecciona Modelo</option>';
+                        data.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.id_modelo;
+                            opt.textContent = m.nombre_modelo;
+                            selectModelo.appendChild(opt);
+                        });
+                    });
+                }
+            });
+        }
         
-        // Desactivar botón y cambiar texto
-        btn.disabled = true;
-        text.innerText = " Procesando en la Nube...";
-        spinner.classList.remove('d-none');
+        // 3. CAMBIO DE MODELO MANUAL
+        if (selectModelo && inputModeloTexto) {
+            selectModelo.addEventListener("change", function () {
+                if (selectModelo.selectedIndex >= 0) inputModeloTexto.value = selectModelo.options[selectModelo.selectedIndex].text;
+            });
+        }
     });
 </script>
 {% endblock %}
