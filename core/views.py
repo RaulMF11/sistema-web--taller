@@ -11,90 +11,113 @@ import os
 
 @login_required
 def crear_diagnostico(request):
-    # Si el mecánico envió el formulario (Método POST)
     if request.method == 'POST':
         form = DiagnosticoForm(request.POST)
-        
         if form.is_valid():
-            diagnostico = form.save(commit=False)
+            # 1. Obtenemos datos limpios del formulario (SIN GUARDAR EN BD AÚN)
+            datos = form.cleaned_data
             
-            # --- 1. Preparar Datos para Azure (Estructura Plana) ---
-            datos_para_ia = {
-                "marca": diagnostico.marca,
-                "modelo": diagnostico.modelo,
-                "anio": diagnostico.anio,
-                "kilometraje": diagnostico.kilometraje,
-                "ultimo_mantenimiento": str(diagnostico.ultimo_mantenimiento),
-                "descripcion_sintomas": diagnostico.descripcion_sintomas,
-                "sensor_rpm": diagnostico.sensor_rpm or 0,
-                "sensor_presion_aceite": diagnostico.sensor_presion_aceite or 0,
-                "sensor_temperatura_motor": diagnostico.sensor_temperatura_motor or 0,
-                "sensor_voltaje_bateria": diagnostico.sensor_voltaje_bateria or 0,
-                "sensor_velocidad": diagnostico.sensor_velocidad or 0,
-                "sensor_nivel_combustible": diagnostico.sensor_nivel_combustible or 0
+            # 2. Preparar JSON para Azure
+            payload = {
+                "marca": str(datos['marca']), # Asegurar string si es objeto
+                "modelo": str(datos['modelo']),
+                "anio": datos['anio'],
+                "kilometraje": datos['kilometraje'],
+                "ultimo_mantenimiento": str(datos['ultimo_mantenimiento']),
+                "descripcion_sintomas": datos['descripcion_sintomas'],
+                "sensor_rpm": datos.get('sensor_rpm', 0),
+                "sensor_presion_aceite": datos.get('sensor_presion_aceite', 0),
+                "sensor_temperatura_motor": datos.get('sensor_temperatura_motor', 0),
+                "sensor_voltaje_bateria": datos.get('sensor_voltaje_bateria', 0),
+                "sensor_velocidad": datos.get('sensor_velocidad', 0),
+                "sensor_nivel_combustible": datos.get('sensor_nivel_combustible', 0)
             }
 
-            # --- 2. Configurar Conexión ---
+            # 3. Consultar a Azure
             endpoint_url = os.getenv('AZURE_ML_ENDPOINT')
             api_key = os.getenv('AZURE_ML_KEY')
-            headers = {'Content-Type': 'application/json'}
-            if api_key:
-                headers['Authorization'] = f'Bearer {api_key}'
+            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
 
-            # --- 3. Enviar y Procesar ---
             try:
-                print(f"🚀 Enviando a Azure: {json.dumps(datos_para_ia)}") # Log simple
+                response = requests.post(endpoint_url, json=payload, headers=headers)
                 
-                response = requests.post(endpoint_url, json=datos_para_ia, headers=headers)
-                
-                print("ESTADO HTTP:", response.status_code)
-                print("RESPUESTA CRUDA:", response.text)
-
                 if response.status_code == 200:
-                    # AQUI ESTABA EL ERROR: Usamos 'data' que es lo que llega de Azure
-                    data = response.json() 
+                    prediccion = response.json()
                     
-                    # 1. Guardamos en el Modelo (BD) usando 'data'
-                    diagnostico.ia_falla_predicha = data.get('falla_predicha', 'Desconocido')
-                    diagnostico.ia_subfalla_predicha = data.get('subfalla_predicha', 'N/A')
-                    diagnostico.ia_confianza = data.get('confianza', 0.0)
-                    
-                    # Guardamos en SQL Server
-                    diagnostico.save() 
-
-                    # 2. Preparamos el Contexto para el HTML (Esto es lo que verá el usuario)
-                    contexto_resultado = {
-                        'falla': diagnostico.ia_falla_predicha,
-                        'subfalla': diagnostico.ia_subfalla_predicha,
-                        'solucion': data.get('solucion_predicha', 'Revisar manual de servicio'),
-                        'gravedad': data.get('gravedad_predicha', 'Media'),
-                        'confianza': round(diagnostico.ia_confianza * 100, 1),
-                        'confianza_decimal': diagnostico.ia_confianza
+                    # 4. PASO CRÍTICO: No guardamos. Renderizamos la plantilla de VALIDACIÓN.
+                    # Pasamos los datos originales + la respuesta de la IA
+                    contexto = {
+                        'datos_originales': payload, # Para re-enviar en el paso 2
+                        'prediccion_ia': prediccion,
+                        'categorias_fallas': ["Motor", "Sistema Eléctrico", "Transmisión", "Frenos", "Combustible"] # O cargar desde BD
                     }
-
-                    # ¡IMPORTANTE! Usamos 'render' para quedarnos en la página y mostrar la tarjeta
-                    return render(request, 'diagnostico_form.html', {
-                        'form': DiagnosticoForm(), # Formulario limpio
-                        'resultado': contexto_resultado # Enviamos el resultado
-                    })
-
+                    return render(request, 'validar_diagnostico.html', contexto)
+                
                 else:
-                    # Si Azure da error (400, 500)
-                    messages.warning(request, f'Error en la IA: {response.text}')
+                    messages.error(request, f"Error IA: {response.text}")
+                    return redirect('crear_diagnostico')
 
             except Exception as e:
-                # Si falla la conexión (Internet, timeout)
-                messages.error(request, f'Error crítico de conexión: {str(e)}')
-
-            # Si algo falló (entró al else o al except), guardamos sin IA y recargamos
-            diagnostico.save()
-            return redirect('crear_diagnostico')
-
-    # Método GET (Carga inicial)
+                messages.error(request, f"Error de conexión: {str(e)}")
+                return redirect('crear_diagnostico')
     else:
         form = DiagnosticoForm()
 
     return render(request, 'diagnostico_form.html', {'form': form})
+@login_required
+def guardar_diagnostico_final(request):
+    if request.method == 'POST':
+        try:
+            # 1. Recuperar datos originales (Inputs ocultos del HTML)
+            # Nota: Asumimos que los nombres coinciden con el modelo
+            diag = Diagnosticos()
+            
+            # Asignar usuario logueado (SOLUCIÓN AL ID=1)
+            diag.usuario = request.user 
+            
+            # Asignar datos del vehículo y sensores
+            diag.marca = request.POST.get('marca')
+            diag.modelo = request.POST.get('modelo')
+            diag.anio = request.POST.get('anio')
+            diag.kilometraje = request.POST.get('kilometraje')
+            diag.ultimo_mantenimiento = request.POST.get('ultimo_mantenimiento')
+            diag.descripcion_sintomas = request.POST.get('descripcion_sintomas')
+            # ... asignar resto de sensores ...
+
+            # 2. Datos de la IA (Siempre se guardan)
+            diag.ia_falla_predicha = request.POST.get('ia_falla')
+            diag.ia_subfalla_predicha = request.POST.get('ia_subfalla')
+            diag.ia_solucion_predicha = request.POST.get('ia_solucion')
+            diag.ia_gravedad_predicha = request.POST.get('ia_gravedad')
+            diag.ia_confianza = request.POST.get('ia_confianza')
+
+            # 3. Lógica de Validación (REAL vs PREDICHO)
+            validacion = request.POST.get('validacion_mecanico') # 'si' o 'no'
+            
+            if validacion == 'si':
+                diag.es_correcto = True
+                # Si es correcto, lo Real es igual a lo Predicho
+                diag.falla_real = diag.ia_falla_predicha
+                diag.subfalla_real = diag.ia_subfalla_predicha
+                diag.solucion_real = diag.ia_solucion_predicha
+                diag.gravedad_real = diag.ia_gravedad_predicha
+            else:
+                diag.es_correcto = False
+                # Si es incorrecto, tomamos lo que escribió el mecánico
+                diag.falla_real = request.POST.get('correccion_falla')
+                diag.subfalla_real = request.POST.get('correccion_subfalla')
+                diag.solucion_real = request.POST.get('correccion_solucion')
+                diag.gravedad_real = request.POST.get('correccion_gravedad')
+
+            diag.fecha_consulta = timezone.now()
+            diag.save()
+            
+            messages.success(request, "Diagnóstico registrado y validado correctamente.")
+            return redirect('historial_diagnosticos')
+
+        except Exception as e:
+            messages.error(request, f"Error guardando: {str(e)}")
+            return redirect('crear_diagnostico')
 
 @login_required
 def historial_diagnosticos(request):

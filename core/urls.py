@@ -7,4 +7,5 @@ urlpatterns = [
     path('historial/', views.historial_diagnosticos, name='historial'),
     path('detalle/<int:id_diagnostico>/', views.detalle_diagnostico, name='detalle_diagnostico'),
     path('dashboard/', views.dashboard_admin, name='dashboard'),
+    path('guardar-confirmacion/', views.guardar_diagnostico_final, name='guardar_diagnostico_final'),
 ]

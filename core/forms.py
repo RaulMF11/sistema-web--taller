@@ -1,47 +1,60 @@
 from django import forms
-from .models import Diagnosticos
+from .models import Diagnosticos, Marcas, Modelos, Vehiculos
 
 class DiagnosticoForm(forms.ModelForm):
+    # --- CAMPOS EXTRA (No están en BD, solo para la Interfaz) ---
+    # Estos crean los desplegables bonitos para que el mecánico elija
+    marca_select = forms.ModelChoiceField(
+        queryset=Marcas.objects.all(),
+        label="Seleccionar Marca",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_marca_select'})
+    )
+    
+    modelo_select = forms.ModelChoiceField(
+        queryset=Modelos.objects.all(), # Idealmente se filtra con JS
+        label="Seleccionar Modelo",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_modelo_select'})
+    )
+
     class Meta:
         model = Diagnosticos
-        # Aquí definimos SOLO los campos que el mecánico debe llenar.
-        # Ocultamos los campos de respuesta de la IA (esos se llenan solos).
         fields = [
-            'placa',
-            'marca', 
-            'modelo', 
+            'placa_ref',  # <--- CORREGIDO: Ahora usamos la llave foránea
+            'marca',      # Campo de texto (se llenará automático con JS)
+            'modelo',     # Campo de texto (se llenará automático con JS)
             'anio', 
-            'kilometraje',
-            'ultimo_mantenimiento',
+            'kilometraje', 
+            'ultimo_mantenimiento', 
             'descripcion_sintomas',
             'sensor_rpm', 
             'sensor_presion_aceite', 
             'sensor_temperatura_motor', 
             'sensor_voltaje_bateria',
-            'sensor_velocidad',
+            'sensor_velocidad', 
             'sensor_nivel_combustible'
         ]
         
-        # Etiquetas amigables para que el mecánico entienda qué poner
-        labels = {
-            'placa': 'Placa del Vehículo',
-            'anio': 'Año de Fabricación',
-            'ultimo_mantenimiento': 'Fecha Último Mantenimiento',
-            'descripcion_sintomas': 'Descripción de la Falla (Síntomas)',
-            'sensor_rpm': 'Sensor RPM',
-            'sensor_presion_aceite': 'Presión de Aceite (psi)',
-            'sensor_temperatura_motor': 'Temperatura Motor (°C)',
-            'sensor_voltaje_bateria': 'Voltaje Batería (V)',
-            'sensor_velocidad': 'Velocidad (km/h)',
-            'sensor_nivel_combustible': 'Nivel Combustible (%)'
+        widgets = {
+            'descripcion_sintomas': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Describe el ruido, olor o comportamiento...'}),
+            'ultimo_mantenimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            # Ocultamos los campos de texto porque el usuario usará los desplegables
+            'marca': forms.HiddenInput(),
+            'modelo': forms.HiddenInput(),
+            'placa_ref': forms.Select(attrs={'class': 'form-select'}), # Desplegable de placas registradas
+            # Estilos para sensores
+            'sensor_rpm': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sensor_presion_aceite': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sensor_temperatura_motor': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sensor_voltaje_bateria': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sensor_velocidad': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sensor_nivel_combustible': forms.NumberInput(attrs={'class': 'form-control'}),
+            'anio': forms.NumberInput(attrs={'class': 'form-control'}),
+            'kilometraje': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-        # Widgets para mejorar la apariencia (Bootstrap ayudará, pero esto ajusta tamaños)
-        widgets = {
-            'descripcion_sintomas': forms.Textarea(attrs={
-                'rows': 3, 
-                'placeholder': 'Ej: El motor hace un ruido metálico al acelerar...'
-            }),
-            'placa': forms.TextInput(attrs={'placeholder': 'ABC-123'}),
-            'ultimo_mantenimiento': forms.DateInput(attrs={'type': 'date'}),
-        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Etiqueta opcional para que se entienda mejor
+        self.fields['placa_ref'].label = "Placa del Vehículo (Registrados)"

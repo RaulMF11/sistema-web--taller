@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>🔎 Validar Predicción de la IA</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card bg-light border-info">
+                <div class="card-header bg-info text-white">La IA sugiere:</div>
+                <div class="card-body">
+                    <h3>{{ prediccion_ia.falla_predicha }}</h3>
+                    <p><strong>Subfalla:</strong> {{ prediccion_ia.subfalla_predicha }}</p>
+                    <p><strong>Solución:</strong> {{ prediccion_ia.solucion_predicha }}</p>
+                    <p><strong>Gravedad:</strong> {{ prediccion_ia.gravedad_predicha }}</p>
+                    <small>Confianza: {{ prediccion_ia.confianza }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <form action="{% url 'guardar_diagnostico_final' %}" method="POST">
+                {% csrf_token %}
+
+                <input type="hidden" name="marca" value="{{ datos_originales.marca }}">
+                <input type="hidden" name="modelo" value="{{ datos_originales.modelo }}">
+                <input type="hidden" name="anio" value="{{ datos_originales.anio }}">
+                <input type="hidden" name="kilometraje" value="{{ datos_originales.kilometraje }}">
+                <input type="hidden" name="ultimo_mantenimiento" value="{{ datos_originales.ultimo_mantenimiento }}">
+                <input type="hidden" name="descripcion_sintomas" value="{{ datos_originales.descripcion_sintomas }}">
+                <input type="hidden" name="ia_falla" value="{{ prediccion_ia.falla_predicha }}">
+                <input type="hidden" name="ia_subfalla" value="{{ prediccion_ia.subfalla_predicha }}">
+                <input type="hidden" name="ia_solucion" value="{{ prediccion_ia.solucion_predicha }}">
+                <input type="hidden" name="ia_gravedad" value="{{ prediccion_ia.gravedad_predicha }}">
+                <input type="hidden" name="ia_confianza" value="{{ prediccion_ia.confianza }}">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5>¿Es correcto este diagnóstico?</h5>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="validacion_mecanico" id="si" value="si" checked onclick="toggleCorreccion(false)">
+                            <label class="form-check-label" for="si">✅ Sí, confirmar</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="validacion_mecanico" id="no" value="no" onclick="toggleCorreccion(true)">
+                            <label class="form-check-label" for="no">❌ No, corregir</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panel-correccion" class="card mt-3 border-danger" style="display:none;">
+                    <div class="card-header bg-danger text-white">Corrección del Experto</div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label>Falla Real:</label>
+                            <select name="correccion_falla" class="form-select">
+                                {% for cat in categorias_fallas %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label>Subfalla Real:</label>
+                            <input type="text" name="correccion_subfalla" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label>Solución Real:</label>
+                            <textarea name="correccion_solucion" class="form-control"></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label>Gravedad Real:</label>
+                            <select name="correccion_gravedad" class="form-select">
+                                <option value="Baja">Baja</option>
+                                <option value="Media">Media</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Crítica">Crítica</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg mt-3 w-100">Guardar Diagnóstico</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCorreccion(mostrar) {
+        const panel = document.getElementById('panel-correccion');
+        panel.style.display = mostrar ? 'block' : 'none';
+        
+        // Opcional: Hacer required los campos si se muestra
+        const inputs = panel.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => input.required = mostrar);
+    }
+</script>
+{% endblock %}
