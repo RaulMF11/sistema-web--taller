@@ -9,27 +9,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        :root {
+            --goodyear-blue: #003087;
+            --goodyear-blue-dark: #001f5c;
+            --goodyear-yellow: #ffd100;
+        }
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* --- ESTILOS DEL SIDEBAR --- */
+        /* --- ESTILOS DEL SIDEBAR (Escritorio) --- */
         .sidebar {
             height: 100vh;
             width: 260px;
             position: fixed;
             top: 0;
             left: 0;
-            background: linear-gradient(180deg, #003087 0%, #001f5c 100%); /* Azul Goodyear profundo */
+            background: linear-gradient(180deg, var(--goodyear-blue) 0%, var(--goodyear-blue-dark) 100%);
             padding-top: 0;
             color: white;
-            z-index: 1000;
+            z-index: 1050;
             box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
         }
         
         .sidebar-header {
-            background-color: #ffd100; /* Amarillo Goodyear */
+            background-color: var(--goodyear-yellow);
             padding: 20px;
             text-align: center;
-            color: #003087;
+            color: var(--goodyear-blue);
             font-weight: 800;
             font-size: 1.4rem;
             letter-spacing: 1px;
@@ -37,6 +44,7 @@
 
         .sidebar-menu {
             padding: 20px 10px;
+            padding-bottom: 100px;
         }
 
         .sidebar a {
@@ -52,47 +60,104 @@
 
         .sidebar a:hover {
             background-color: rgba(255, 255, 255, 0.1);
-            color: #ffd100;
+            color: var(--goodyear-yellow);
             transform: translateX(5px);
         }
 
-        /* Clase para resaltar la página actual */
         .sidebar a.active {
-            background-color: #ffd100;
-            color: #003087;
+            background-color: var(--goodyear-yellow);
+            color: var(--goodyear-blue);
             font-weight: bold;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
         .user-panel {
-            position: absolute;
+            position: fixed;
             bottom: 0;
-            width: 100%;
+            left: 0;
+            width: 260px;
             padding: 20px;
-            background-color: rgba(0,0,0,0.2);
+            background: linear-gradient(0deg, var(--goodyear-blue-dark) 0%, rgba(0,31,92,0.9) 100%);
             border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 1060;
+            transition: transform 0.3s ease-in-out;
         }
 
         /* --- CONTENIDO PRINCIPAL --- */
         .main-content {
-            margin-left: 260px; /* Deja espacio para el sidebar */
+            margin-left: 260px;
             padding: 30px;
             min-height: 100vh;
+            transition: margin-left 0.3s ease-in-out;
         }
 
-        /* AJUSTE LOGIN (Sin Sidebar) */
-        .no-sidebar-content {
-            margin-left: 0;
-            padding: 0;
+        .no-sidebar-content { margin-left: 0; padding: 0; }
+
+        /* --- OVERLAY PARA MÓVILES --- */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            display: none; opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .sidebar-overlay.show { display: block; opacity: 1; }
+
+        /* --- NUEVO: NAVBAR MÓVIL ESTILO GOODYEAR --- */
+        .mobile-navbar {
+            background: linear-gradient(90deg, var(--goodyear-blue) 0%, var(--goodyear-blue-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+        }
+        .mobile-brand {
+            color: var(--goodyear-yellow);
+            font-weight: 800;
+            letter-spacing: 1px;
+            font-size: 1.2rem;
+            text-decoration: none;
+        }
+
+        /* --- MEDIA QUERIES (RESPONSIVIDAD) --- */
+        @media (max-width: 991.98px) {
+            .sidebar, .user-panel { transform: translateX(-100%); }
+            .sidebar.show, .sidebar.show .user-panel { transform: translateX(0); }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+                /* IMPORTANTE: Espacio superior para que la navbar fija no tape el contenido */
+                padding-top: 80px; 
+            }
         }
     </style>
 </head>
 <body>
 
     {% if user.is_authenticated %}
-        <div class="sidebar">
+        
+        <nav class="navbar fixed-top mobile-navbar d-lg-none">
+            <div class="container-fluid">
+                <button class="btn text-white border-0 p-1" id="sidebarToggle" style="font-size: 1.5rem;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <a href="#" class="mobile-brand mx-auto">
+                    <i class="fas fa-tools me-2"></i>GOODYEAR AI
+                </a>
+
+                <div class="bg-warning rounded-circle d-flex justify-content-center align-items-center text-dark fw-bold" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <i class="fas fa-tools me-2"></i>GOODYEAR AI
+               <i class="fas fa-tools me-2"></i>GOODYEAR AI
             </div>
             
             <div class="sidebar-menu">
@@ -114,7 +179,6 @@
                 {% if user.is_superuser %}
                     <hr class="border-secondary my-3">
                     <small class="text-uppercase text-white-50 ms-3" style="font-size: 0.75rem;">Gerencia</small>
-                    
                     <a href="{% url 'dashboard' %}" class="{% if '/dashboard/' in request.path %}active{% endif %}">
                         <i class="fas fa-chart-line me-2" style="width:25px;"></i> Dashboard KPI
                     </a>
@@ -169,6 +233,41 @@
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            // Ahora el botón toggle está dentro del navbar
+            const toggleBtn = document.getElementById('sidebarToggle');
+
+            function toggleMenu() {
+                sidebar.classList.toggle('show');
+                if (sidebar.classList.contains('show')) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.classList.add('show'), 10);
+                } else {
+                    overlay.classList.remove('show');
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            }
+
+            if(toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleMenu();
+                });
+            }
+
+            if(overlay) {
+                overlay.addEventListener('click', function() {
+                    if (sidebar.classList.contains('show')) {
+                        toggleMenu();
+                    }
+                });
+            }
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
-</html> 
+</html>
