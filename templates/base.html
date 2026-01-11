@@ -267,6 +267,21 @@
                 });
             }
         });
+        // Esperar 3000 milisegundos (3 segundos)
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert'); // Selecciona todas las alertas
+            
+            alerts.forEach(function(alert) {
+                // Efecto de desvanecimiento
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = 0;
+                
+                // Eliminar el elemento del DOM después de que se desvanezca
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            });
+        }, 3000);
     </script>
     {% block scripts %}{% endblock %}
 </body>

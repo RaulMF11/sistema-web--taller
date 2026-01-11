@@ -8,103 +8,93 @@ import requests
 import json
 import os
 
-# Importamos Modelos y Formularios
 from .models import Diagnosticos, Marcas, Modelos, Vehiculos
 from .forms import DiagnosticoForm
 
-# core/views.py
+# --- LÓGICA DE DIAGNÓSTICO ---
 
-@login_required
-def home_inteligente(request):
-    if request.user.is_superuser:
-        # Si es Admin, va al Dashboard Gerencial
-        return redirect('dashboard') 
-    else:
-        # Si es Mecánico, va a su Perfil Operativo
-        return redirect('perfil_mecanico')
-    
 @login_required
 def crear_diagnostico(request):
     if request.method == 'POST':
         form = DiagnosticoForm(request.POST)
         if form.is_valid():
             # 1. Recuperar datos limpios
-            placa_txt = form.cleaned_data['placa']
-            propietario_txt = form.cleaned_data['propietario']
+            datos = form.cleaned_data
+            placa_txt = datos['placa']
+            propietario_txt = datos['propietario']
             
-            # --- LÓGICA DE FIDELIZACIÓN ---
-            # Buscamos si el vehículo ya existe
+            # --- FIDELIZACIÓN (Guardar/Actualizar Vehículo) ---
             vehiculo, created = Vehiculos.objects.get_or_create(
                 placa=placa_txt,
                 defaults={
-                    # Si es NUEVO, usamos estos datos por defecto
-                    'anio': form.cleaned_data['anio'],
+                    'anio': datos['anio'],
                     'propietario': propietario_txt if propietario_txt else "Cliente Taller",
-                    'modelo_ia': Modelos.objects.first() # Modelo genérico por ahora
+                    'modelo_ia': Modelos.objects.filter(nombre_modelo=datos['modelo']).first() or Modelos.objects.first()
                 }
             )
-            
-            # Si el vehículo YA EXISTÍA y el mecánico escribió un nombre nuevo, actualizamos el dueño
             if not created and propietario_txt:
                 vehiculo.propietario = propietario_txt
                 vehiculo.save()
-            # -------------------------------
 
-            # 2. Guardar Diagnóstico
-            diagnostico = form.save(commit=False)
-            diagnostico.usuario = request.user # Asignamos al mecánico logueado
-            diagnostico.placa_ref = vehiculo   # Enlazamos a la tabla de fidelización
-            # 1. Obtenemos datos limpios del formulario (SIN GUARDAR EN BD AÚN)
-            datos = form.cleaned_data
-            
-            # 2. Preparar JSON para Azure
+            # 2. Preparar JSON para Azure (Payload limpio)
             payload = {
-                "marca": str(datos['marca']), # Asegurar string si es objeto
+                "marca": str(datos['marca']), 
                 "modelo": str(datos['modelo']),
-                "anio": datos['anio'],
-                "kilometraje": datos['kilometraje'],
+                "anio": int(datos['anio']),
+                "kilometraje": int(datos['kilometraje']),
                 "ultimo_mantenimiento": str(datos['ultimo_mantenimiento']),
-                "descripcion_sintomas": datos['descripcion_sintomas'],
-                "sensor_rpm": datos.get('sensor_rpm', 0),
-                "sensor_presion_aceite": datos.get('sensor_presion_aceite', 0),
-                "sensor_temperatura_motor": datos.get('sensor_temperatura_motor', 0),
-                "sensor_voltaje_bateria": datos.get('sensor_voltaje_bateria', 0),
-                "sensor_velocidad": datos.get('sensor_velocidad', 0),
-                "sensor_nivel_combustible": datos.get('sensor_nivel_combustible', 0)
+                "descripcion_sintomas": datos['descripcion_sintomas']
             }
 
             # 3. Consultar a Azure
             endpoint_url = os.getenv('AZURE_ML_ENDPOINT')
             api_key = os.getenv('AZURE_ML_KEY')
+            
+            if not endpoint_url or not api_key:
+                messages.error(request, "Error: Faltan credenciales de Azure en .env")
+                return redirect('crear_diagnostico')
+
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
 
             try:
-                response = requests.post(endpoint_url, json=payload, headers=headers)
+                request_data = {"data": [payload]} 
+                response = requests.post(endpoint_url, json=request_data, headers=headers, timeout=20)
                 
                 if response.status_code == 200:
-                    prediccion = response.json()
-                    confianza_raw = prediccion.get('confianza', 0)
+                    respuesta_completa = response.json()
                     
-                    # Nos aseguramos que sea un número (float)
+                    # Extraemos el bloque nuevo 'diagnostico_ia'
+                    prediccion = respuesta_completa.get('diagnostico_ia', {})
+                    
+                    if not prediccion:
+                        messages.error(request, "La IA respondió vacío. Revisa el formato.")
+                        return redirect('crear_diagnostico')
+
+                    # --- CORRECCIÓN MATEMÁTICA DEL PORCENTAJE ---
                     try:
-                        confianza_float = float(confianza_raw)
-                        # Multiplicamos por 100 y redondeamos a 1 decimal
-                        prediccion['confianza'] = round(confianza_float * 100, 1) 
+                        raw_conf = float(prediccion.get('probabilidad_acierto', 0))
+                        # Si viene como decimal (ej. 0.98), lo convertimos a porcentaje (98.0)
+                        if raw_conf <= 1.0:
+                            confianza_final = round(raw_conf * 100, 1)
+                        else:
+                            confianza_final = round(raw_conf, 1)
+                        
+                        # Actualizamos el valor en el diccionario para enviarlo limpio al HTML
+                        prediccion['probabilidad_acierto'] = confianza_final
                     except ValueError:
-                        prediccion['confianza'] = 0
-                    
-                    # 4. PASO CRÍTICO: No guardamos. Renderizamos la plantilla de VALIDACIÓN.
-                    # Pasamos los datos originales + la respuesta de la IA
+                        prediccion['probabilidad_acierto'] = 0
+                    # -------------------------------------------
+
                     contexto = {
-                        'datos_originales': payload, # Para re-enviar en el paso 2
-                        'prediccion_ia': prediccion,
+                        'datos_originales': payload, 
+                        'prediccion_ia': prediccion, 
                         'placa_vehiculo': placa_txt,
-                        'categorias_fallas': ["Motor", "Sistema Eléctrico", "Transmisión", "Frenos", "Combustible"] # O cargar desde BD
+                        'meta': respuesta_completa.get('meta', {})
                     }
                     return render(request, 'validar_diagnostico.html', contexto)
                 
                 else:
-                    messages.error(request, f"Error IA: {response.text}")
+                    messages.error(request, f"Error Azure ({response.status_code}): {response.text}")
                     return redirect('crear_diagnostico')
 
             except Exception as e:
@@ -119,57 +109,42 @@ def crear_diagnostico(request):
 def guardar_diagnostico_final(request):
     if request.method == 'POST':
         try:
-            # 1. Recuperar datos originales (Inputs ocultos del HTML)
-            # Nota: Asumimos que los nombres coinciden con el modelo
             diag = Diagnosticos()
-            
-            # Asignar usuario logueado (SOLUCIÓN AL ID=1)
             diag.usuario = request.user 
             
-            # Asignar datos del vehículo y sensores
+            # Recuperar datos ocultos del vehículo
             diag.marca = request.POST.get('marca')
             diag.modelo = request.POST.get('modelo')
             diag.anio = request.POST.get('anio')
             diag.kilometraje = request.POST.get('kilometraje')
             diag.ultimo_mantenimiento = request.POST.get('ultimo_mantenimiento')
             diag.descripcion_sintomas = request.POST.get('descripcion_sintomas')
-            # ... asignar resto de sensores ...
-            # Sensores (Usamos '0' si vienen vacíos)
-            diag.sensor_rpm = limpiar_numero(request.POST.get('sensor_rpm'))
-            diag.sensor_velocidad = limpiar_numero(request.POST.get('sensor_velocidad'))
-            diag.sensor_temperatura_motor = limpiar_numero(request.POST.get('sensor_temperatura_motor'))
-            diag.sensor_presion_aceite = limpiar_numero(request.POST.get('sensor_presion_aceite'))
-            diag.sensor_voltaje_bateria = limpiar_numero(request.POST.get('sensor_voltaje_bateria'))
-            diag.sensor_nivel_combustible = limpiar_numero(request.POST.get('sensor_nivel_combustible'))
 
-            # 2. Datos de la IA (Siempre se guardan)
-            diag.ia_falla_predicha = request.POST.get('ia_falla')
-            diag.ia_subfalla_predicha = request.POST.get('ia_subfalla')
+            # --- CORRECCIÓN DE NOMBRES ---
+            # Leemos los inputs ocultos con los nombres NUEVOS que vienen del HTML validado
+            diag.ia_falla_predicha = request.POST.get('ia_sistema')
+            diag.ia_subfalla_predicha = request.POST.get('ia_detalle')
             diag.solucion_predicha = request.POST.get('ia_solucion')
-            diag.gravedad_predicha = request.POST.get('ia_gravedad')
-            diag.ia_confianza = request.POST.get('ia_confianza')
+            diag.gravedad_predicha = request.POST.get('ia_riesgo')
+            diag.ia_confianza = request.POST.get('ia_probabilidad')
             
-            # --- 3. VINCULACIÓN CON PLACA (CORRECCIÓN) ---
             placa_txt = request.POST.get('placa')
             if placa_txt:
-                # Buscamos el objeto Vehiculo para guardarlo en la ForeignKey
                 vehiculo = Vehiculos.objects.filter(placa=placa_txt).first()
                 if vehiculo:
-                    diag.placa_ref = vehiculo # Asignamos la relación
+                    diag.placa_ref = vehiculo
 
-            # 4. Lógica de Validación (REAL vs PREDICHO)
-            validacion = request.POST.get('validacion_mecanico') # 'si' o 'no'
+            # Validación Humana
+            validacion = request.POST.get('validacion_mecanico')
             
             if validacion == 'si':
                 diag.es_correcto = True
-                # Si es correcto, lo Real es igual a lo Predicho
                 diag.falla_real = diag.ia_falla_predicha
                 diag.subfalla_real = diag.ia_subfalla_predicha
                 diag.solucion_real = diag.solucion_predicha
                 diag.gravedad_real = diag.gravedad_predicha
             else:
                 diag.es_correcto = False
-                # Si es incorrecto, tomamos lo que escribió el mecánico
                 diag.falla_real = request.POST.get('correccion_falla')
                 diag.subfalla_real = request.POST.get('correccion_subfalla')
                 diag.solucion_real = request.POST.get('correccion_solucion')
@@ -178,12 +153,20 @@ def guardar_diagnostico_final(request):
             diag.fecha_consulta = timezone.now()
             diag.save()
             
-            messages.success(request, "Diagnóstico registrado y validado correctamente.")
-            return redirect('historial')
+            messages.success(request, "Diagnóstico guardado correctamente.")
+            return redirect('crear_diagnostico')
 
         except Exception as e:
             messages.error(request, f"Error guardando: {str(e)}")
             return redirect('crear_diagnostico')
+    
+    return redirect('crear_diagnostico')
+
+# --- VISTAS AUXILIARES Y DASHBOARD (Sin cambios mayores) ---
+
+@login_required
+def home_inteligente(request):
+    return redirect('dashboard') if request.user.is_superuser else redirect('perfil_mecanico')
 
 @login_required
 def historial_diagnosticos(request):

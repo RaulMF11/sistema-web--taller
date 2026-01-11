@@ -1,13 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# TABLAS MAESTRAS (Ahora gestionadas por Django)
+# TABLAS MAESTRAS
 class Marcas(models.Model):
     id_marca = models.AutoField(primary_key=True)
     nombre_marca = models.CharField(unique=True, max_length=50)
 
     class Meta:
-        managed = True  # <--- CAMBIO: Django creará esta tabla
+        managed = True
         db_table = 'Marcas'
         verbose_name_plural = "Marcas"
 
@@ -20,7 +20,7 @@ class Modelos(models.Model):
     nombre_modelo = models.CharField(max_length=50)
 
     class Meta:
-        managed = True  # <--- CAMBIO: Django creará esta tabla
+        managed = True
         db_table = 'Modelos'
         verbose_name_plural = "Modelos"
 
@@ -43,37 +43,40 @@ class Vehiculos(models.Model):
     def __str__(self):
         return f"{self.placa} - {self.propietario}"
 
-# TABLA DIAGNOSTICOS
+# TABLA DIAGNOSTICOS (ACTUALIZADA: SIN SENSORES)
 class Diagnosticos(models.Model):
     id_diagnostico = models.AutoField(primary_key=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, db_column='usuario_id')
+    
+    # Relación opcional con vehículo registrado (si existe)
     placa_ref = models.ForeignKey(Vehiculos, on_delete=models.SET_NULL, db_column='placa', null=True, blank=True)
 
-    # DATOS FLAT (Texto)
+    # DATOS DE ENTRADA (SNAPSHOT)
+    # Guardamos marca/modelo como texto aquí también por si el vehículo se borra o cambia
     marca = models.CharField(max_length=50, blank=True, null=True)
     modelo = models.CharField(max_length=50, blank=True, null=True)
     anio = models.IntegerField(blank=True, null=True)
-    kilometraje = models.IntegerField(blank=True, null=True)
+    kilometraje = models.IntegerField(blank=True, null=True) # CRÍTICO PARA LA IA
     ultimo_mantenimiento = models.DateField(blank=True, null=True)
     
-    # SÍNTOMAS
+    # INPUT PRINCIPAL
     descripcion_sintomas = models.TextField(blank=True, null=True)
-    sensor_rpm = models.FloatField(blank=True, null=True)
-    sensor_presion_aceite = models.FloatField(blank=True, null=True)
-    sensor_temperatura_motor = models.FloatField(blank=True, null=True)
-    sensor_voltaje_bateria = models.FloatField(blank=True, null=True)
-    sensor_velocidad = models.FloatField(blank=True, null=True)
-    sensor_nivel_combustible = models.FloatField(blank=True, null=True)
 
-    # OUTPUTS IA
+    # --- CAMPOS DE SENSORES ELIMINADOS ---
+    # Se eliminaron: sensor_rpm, sensor_presion_aceite, etc.
+    # para alinear con la Tesis de Diagnóstico Predictivo.
+
+    # OUTPUTS DE LA IA (AZURE)
     ia_falla_predicha = models.CharField(max_length=100, blank=True, null=True)
     ia_subfalla_predicha = models.CharField(max_length=100, blank=True, null=True)
     solucion_predicha = models.TextField(blank=True, null=True)
     gravedad_predicha = models.CharField(max_length=50, blank=True, null=True)
     ia_confianza = models.FloatField(blank=True, null=True)
-    es_correcto = models.BooleanField(blank=True, null=True)
     
-    # GOLDEN DATA
+    # FEEDBACK / VALIDACIÓN
+    es_correcto = models.BooleanField(blank=True, null=True) # True=IA acertó, False=IA falló
+    
+    # DATOS REALES (GOLDEN DATA PARA RE-ENTRENAR)
     falla_real = models.CharField(max_length=100, blank=True, null=True)
     subfalla_real = models.CharField(max_length=100, blank=True, null=True)
     gravedad_real = models.CharField(max_length=50, blank=True, null=True)
@@ -86,4 +89,4 @@ class Diagnosticos(models.Model):
         verbose_name_plural = "Diagnosticos"
 
     def __str__(self):
-        return f"Diag #{self.id_diagnostico}"
+        return f"Diag #{self.id_diagnostico} - {self.ia_falla_predicha}"

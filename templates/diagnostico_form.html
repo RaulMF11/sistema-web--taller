@@ -2,80 +2,69 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="card card-custom shadow-lg border-0">
-        <div class="card-header bg-white text-center py-4 border-bottom-0">
-            <h3 class="mb-0 fw-bold text-primary">
-                <i class="fas fa-stethoscope me-2"></i>Módulo de Diagnóstico Inteligente
-            </h3>
-        </div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-gradient-primary text-white text-center py-4" style="background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-robot me-2"></i>Asistente de Diagnóstico IA</h3>
+                    <p class="mb-0 opacity-75">Sistema Predictivo Basado en Historial y Síntomas</p>
+                </div>
 
-        <div class="card-body p-5">
-            <form method="post" id="aiForm">
-                {% csrf_token %}
+                <div class="card-body p-5">
+                    <form method="post" id="aiForm">
+                        {% csrf_token %}
 
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6 border-end">
-                        <h5 class="text-primary mb-3"><i class="fas fa-car me-2"></i>Identificación del Vehículo</h5>
-                        <div class="row">
-                            <div class="col-6">{{ form.placa|as_crispy_field }}</div>
-                            <div class="col-6">{{ form.propietario|as_crispy_field }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6">
-                                {{ form.marca_select|as_crispy_field }} 
+                        <h5 class="text-primary mb-4 border-bottom pb-2"><i class="fas fa-car me-2"></i>Identificación del Vehículo</h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.placa|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.propietario|as_crispy_field }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Marca</label>
+                                {{ form.marca_select }}
                                 {{ form.marca }} </div>
-                            <div class="col-6">
-                                {{ form.modelo_select|as_crispy_field }} 
+                            <div class="col-md-6">
+                                <label class="form-label">Modelo</label>
+                                {{ form.modelo_select }}
                                 {{ form.modelo }} </div>
+                            
+                            <div class="col-md-4">
+                                {{ form.anio|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.kilometraje|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.ultimo_mantenimiento|as_crispy_field }}
+                            </div>
                         </div>
-                        <div class="row">
-                            <div class="col-6">{{ form.anio|as_crispy_field }}</div>
-                            <div class="col-6">{{ form.kilometraje|as_crispy_field }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12">{{ form.ultimo_mantenimiento|as_crispy_field }}</div>
-                        </div>
-                    </div>
 
-                    <div class="col-md-6 bg-light p-4 rounded-3">
-                        <h5 class="text-danger mb-3"><i class="fas fa-microchip me-2"></i>Lectura de Sensores (Scanner)</h5>
-                        <div class="alert alert-info py-2 small">
-                            <i class="fas fa-info-circle"></i> Ingrese los valores obtenidos del scanner OBD-II.
+                        <div class="bg-light p-4 rounded-3 border mb-4">
+                            <h5 class="text-danger mb-3"><i class="fas fa-stethoscope me-2"></i>Descripción de Síntomas</h5>
+                            <div class="alert alert-warning small py-2">
+                                <i class="fas fa-lightbulb me-1"></i> Tip: Describe ruidos (chillido, golpe), sensaciones (vibración, jaloneo) y cuándo ocurre (al frenar, en frío).
+                            </div>
+                            {{ form.descripcion_sintomas|as_crispy_field }}
                         </div>
-                        <div class="row">
-                            <div class="col-6">{{ form.sensor_rpm|as_crispy_field }}</div>
-                            <div class="col-6">{{ form.sensor_velocidad|as_crispy_field }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6">{{ form.sensor_temperatura_motor|as_crispy_field }}</div>
-                            <div class="col-6">{{ form.sensor_presion_aceite|as_crispy_field }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6">{{ form.sensor_voltaje_bateria|as_crispy_field }}</div>
-                            <div class="col-6">{{ form.sensor_nivel_combustible|as_crispy_field }}</div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="row g-4 mt-3">
-                    <div class="col-12">
-                        <h5 class="text-secondary mb-3"><i class="fas fa-comment-medical me-2"></i>Descripción del Problema</h5>
-                        {{ form.descripcion_sintomas|as_crispy_field }}
-                    </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg py-3 rounded-pill fw-bold shadow" id="btnAnalizar">
+                                <span id="btnText"><i class="fas fa-brain me-2"></i>ANALIZAR FALLA CON IA</span>
+                                <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2"></span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="d-grid gap-2 mt-5 d-md-flex justify-content-md-end align-items-center">
-                    <button type="submit" class="btn-execute-ai flex-grow-1 py-3" id="btnAnalizar">
-                        <span id="btnText"><i class="fas fa-brain me-3"></i>EJECUTAR ANÁLISIS IA</span>
-                        <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
-
 <style>
     .btn-execute-ai {
         background: linear-gradient(135deg, #003087 0%, #0056b3 100%);
