@@ -94,122 +94,165 @@
 
 {% block scripts %}
 <script>
-    const form = document.getElementById("aiForm");
-    const inputPlaca = document.getElementById("id_placa");
-    const inputPropietario = document.getElementById("id_propietario");
-    const inputAnio = document.getElementById("id_anio");
-    const selectMarca = document.getElementById("id_marca_select");
-    const inputMarcaTexto = document.getElementById("id_marca_texto");
-    const selectModelo = document.getElementById("id_modelo_select");
-    const inputModeloTexto = document.getElementById("id_modelo_texto");
-
-    function bloquearCampos() {
-        if(inputAnio) { inputAnio.readOnly = true; inputAnio.classList.add('bg-light'); }
-        // if(inputPropietario) { inputPropietario.readOnly = true; inputPropietario.classList.add('bg-light'); }
-        if(selectMarca) selectMarca.disabled = true;
-        if(selectModelo) selectModelo.disabled = true;
-    }
-
-    function desbloquearCampos() {
-        if(inputAnio) { inputAnio.readOnly = false; inputAnio.classList.remove('bg-light'); inputAnio.value = ""; }
-        if(inputPropietario) { inputPropietario.readOnly = false; inputPropietario.classList.remove('bg-light'); inputPropietario.value = ""; }
-        if(selectMarca) { selectMarca.disabled = false; selectMarca.value = ""; }
-        if(selectModelo) { selectModelo.disabled = false; selectModelo.innerHTML = '<option value="">Primero selecciona marca</option>'; }
-    }
-
-    if (form) {
-        form.addEventListener("submit", function () {
-            // DESBLOQUEAR ANTES DE ENVIAR PARA QUE DJANGO RECIBA LOS DATOS
-            if(selectMarca) selectMarca.disabled = false;
-            if(selectModelo) selectModelo.disabled = false;
-
-            var btn = document.getElementById("btnAnalizar");
-            var text = document.getElementById("btnText");
-            var spinner = document.getElementById("btnSpinner");
-            if(btn && text && spinner) {
-                btn.disabled = true;
-                text.innerText = " Procesando...";
-                spinner.classList.remove("d-none");
-            }
-        });
-    }
-
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. BUSCAR PLACA
-        if(inputPlaca){
+        // --- REFERENCIAS A LOS ELEMENTOS ---
+        const form = document.getElementById("aiForm");
+        
+        // Campos visibles (Selects de UI)
+        const selectMarca = document.getElementById("id_marca_select");
+        const selectModelo = document.getElementById("id_modelo_select");
+        
+        // Campos ocultos (Lo que se envía a la BD y a la IA)
+        const inputMarcaTexto = document.getElementById("id_marca_texto");
+        const inputModeloTexto = document.getElementById("id_modelo_texto");
+
+        // Otros campos
+        const inputPlaca = document.getElementById("id_placa");
+        const inputPropietario = document.getElementById("id_propietario");
+        const inputAnio = document.getElementById("id_anio");
+
+        // Botón de carga
+        const btnAnalizar = document.getElementById("btnAnalizar");
+        const btnText = document.getElementById("btnText");
+        const btnSpinner = document.getElementById("btnSpinner");
+
+        // --- 1. LÓGICA DE DROPDOWNS EN CASCADA ---
+        
+        // Estado inicial: Bloquear modelo si no hay marca
+        if (!selectMarca.value) {
+            selectModelo.innerHTML = '<option value="">Primero selecciona marca</option>';
+            selectModelo.disabled = true;
+        }
+
+        // Escuchar cambios en la MARCA
+        if (selectMarca) {
+            selectMarca.addEventListener("change", function () {
+                const marcaId = this.value;
+                const marcaNombre = this.options[this.selectedIndex].text;
+
+                // 1. Llenar el input oculto de texto para la IA
+                if(inputMarcaTexto) inputMarcaTexto.value = marcaNombre;
+
+                // 2. Resetear select de modelos
+                selectModelo.innerHTML = '<option value="">Cargando modelos...</option>';
+                selectModelo.disabled = true;
+
+                if (marcaId) {
+                    // Petición AJAX para traer modelos LIMPIOS (Sin paréntesis)
+                    fetch(`{% url 'ajax_load_modelos' %}?marca_id=${marcaId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            selectModelo.innerHTML = '<option value="">Selecciona Modelo</option>';
+                            
+                            data.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id_modelo; // ID para Django
+                                option.textContent = item.nombre_modelo; // NOMBRE LIMPIO para el usuario
+                                selectModelo.appendChild(option);
+                            });
+                            selectModelo.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            selectModelo.innerHTML = '<option value="">Error al cargar</option>';
+                        });
+                } else {
+                    selectModelo.innerHTML = '<option value="">Primero selecciona marca</option>';
+                }
+            });
+        }
+
+        // Escuchar cambios en el MODELO
+        if (selectModelo) {
+            selectModelo.addEventListener("change", function () {
+                // Al elegir modelo, guardamos el TEXTO LIMPIO en el input oculto
+                if (this.selectedIndex >= 0 && inputModeloTexto) {
+                    inputModeloTexto.value = this.options[this.selectedIndex].text;
+                }
+            });
+        }
+
+        // --- 2. BUSCAR PLACA (Auto-completado) ---
+if(inputPlaca){
             inputPlaca.addEventListener("blur", function() {
                 const placa = inputPlaca.value.trim();
+                
                 if(placa.length > 3) {
+                    // Pone un estado de carga visual
+                    if(inputPropietario) inputPropietario.placeholder = "Buscando...";
+                    
                     fetch(`{% url 'ajax_buscar_placa' %}?placa=${placa}`)
                     .then(response => response.json())
                     .then(data => {
                         if(data.encontrado){
-                            // Llenar datos
+                            // 1. Llenar datos básicos
                             if(inputPropietario) inputPropietario.value = data.propietario;
                             if(inputAnio) inputAnio.value = data.anio;
-
-                            // Llenar Marca y cargar modelos
+                            
+                            // 2. Llenar MARCA
                             if(selectMarca) {
                                 selectMarca.value = data.marca_id;
+                                // Actualizar también el input oculto de texto de la marca
                                 if(inputMarcaTexto) inputMarcaTexto.value = data.marca_nombre;
+                                selectMarca.disabled = false; // Asegurar que esté habilitado
+                            }
+
+                            // 3. CARGAR MODELOS Y SELECCIONAR EL CORRECTO (Aquí estaba el fallo)
+                            if (selectModelo && data.marca_id) {
+                                selectModelo.innerHTML = '<option value="">Cargando modelo...</option>';
                                 
-                                // Cargar modelos
+                                // Hacemos el fetch manual aquí para asegurar el orden
                                 fetch(`{% url 'ajax_load_modelos' %}?marca_id=${data.marca_id}`)
-                                .then(res => res.json())
-                                .then(modelos => {
-                                    if(selectModelo){
-                                        selectModelo.innerHTML = '';
+                                    .then(res => res.json())
+                                    .then(modelos => {
+                                        // A. Limpiar y llenar el dropdown
+                                        selectModelo.innerHTML = '<option value="">Selecciona Modelo</option>';
+                                        
                                         modelos.forEach(m => {
                                             const opt = document.createElement('option');
                                             opt.value = m.id_modelo;
                                             opt.textContent = m.nombre_modelo;
                                             selectModelo.appendChild(opt);
                                         });
+
+                                        // B. AHORA SÍ: Seleccionar el modelo específico
                                         selectModelo.value = data.modelo_id;
+                                        selectModelo.disabled = false;
+
+                                        // C. IMPORTANTE: Actualizar el input oculto para que se guarde bien
                                         if(inputModeloTexto) inputModeloTexto.value = data.modelo_nombre;
-                                        
-                                        // BLOQUEAR AL FINAL
-                                        bloquearCampos();
-                                    }
-                                });
+                                    })
+                                    .catch(err => {
+                                        console.error("Error cargando modelos:", err);
+                                        selectModelo.innerHTML = '<option value="">Error manual</option>';
+                                    });
                             }
+                            
                             inputPlaca.classList.add("is-valid");
+                            inputPlaca.classList.remove("is-invalid");
                         } else {
-                            desbloquearCampos();
+                            // Si no existe, limpiar para que escriban uno nuevo
+                            inputPlaca.classList.remove("is-valid");
+                            // Opcional: inputPropietario.value = "";
                         }
-                    });
+                    })
+                    .catch(e => console.error("Error buscando placa:", e));
                 }
             });
         }
 
-        // 2. CAMBIO DE MARCA MANUAL
-        if (selectMarca) {
-            selectMarca.addEventListener("change", function () {
-                const marcaId = selectMarca.value;
-                if(selectMarca.selectedIndex >=0 && inputMarcaTexto) 
-                    inputMarcaTexto.value = selectMarca.options[selectMarca.selectedIndex].text;
+        // --- 3. UI AL ENVIAR EL FORMULARIO ---
+        if (form) {
+            form.addEventListener("submit", function () {
+                // Desbloquear campos para que se envíen en el POST
+                if(selectMarca) selectMarca.disabled = false;
+                if(selectModelo) selectModelo.disabled = false;
 
-                if(selectModelo && marcaId) {
-                    selectModelo.innerHTML = '<option>Cargando...</option>';
-                    fetch(`{% url 'ajax_load_modelos' %}?marca_id=${marcaId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        selectModelo.innerHTML = '<option value="">Selecciona Modelo</option>';
-                        data.forEach(m => {
-                            const opt = document.createElement('option');
-                            opt.value = m.id_modelo;
-                            opt.textContent = m.nombre_modelo;
-                            selectModelo.appendChild(opt);
-                        });
-                    });
+                if(btnAnalizar) {
+                    btnAnalizar.disabled = true;
+                    btnText.innerText = " Analizando con IA...";
+                    btnSpinner.classList.remove("d-none");
                 }
-            });
-        }
-        
-        // 3. CAMBIO DE MODELO MANUAL
-        if (selectModelo && inputModeloTexto) {
-            selectModelo.addEventListener("change", function () {
-                if (selectModelo.selectedIndex >= 0) inputModeloTexto.value = selectModelo.options[selectModelo.selectedIndex].text;
             });
         }
     });

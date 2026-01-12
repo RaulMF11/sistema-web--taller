@@ -307,3 +307,15 @@ def limpiar_numero(valor):
         return int(valor)
     except (ValueError, TypeError):
         return 0
+    
+@login_required
+def cargar_modelos_ajax(request):
+    marca_id = request.GET.get('marca_id')
+    
+    if marca_id:
+        # .values() devuelve un diccionario, ignorando el __str__ del modelo
+        # Por tanto, nombre_modelo vendrá LIMPIO, sin paréntesis.
+        modelos = Modelos.objects.filter(id_marca_id=marca_id).values('id_modelo', 'nombre_modelo').order_by('nombre_modelo')
+        return JsonResponse(list(modelos), safe=False)
+    else:
+        return JsonResponse([], safe=False)

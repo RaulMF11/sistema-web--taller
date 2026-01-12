@@ -20,4 +20,5 @@ urlpatterns = [
     # AJAX
     path('ajax/modelos/', views.cargar_modelos_ajax, name='ajax_load_modelos'),
     path('ajax/buscar-placa/', views.buscar_placa_ajax, name='ajax_buscar_placa'),
+    path('cargar-modelos/', views.cargar_modelos_ajax, name='cargar_modelos_ajax'),
 ]

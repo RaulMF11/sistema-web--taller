@@ -25,7 +25,8 @@ class Modelos(models.Model):
         verbose_name_plural = "Modelos"
 
     def __str__(self):
-        return f"{self.nombre_modelo} ({self.id_marca.nombre_marca})"
+        # return f"{self.nombre_modelo} ({self.id_marca.nombre_marca})"
+        return self.nombre_modelo
 
 # TABLA VEHICULOS
 class Vehiculos(models.Model):
@@ -43,7 +44,7 @@ class Vehiculos(models.Model):
     def __str__(self):
         return f"{self.placa} - {self.propietario}"
 
-# TABLA DIAGNOSTICOS (ACTUALIZADA: SIN SENSORES)
+# TABLA DIAGNOSTICOS
 class Diagnosticos(models.Model):
     id_diagnostico = models.AutoField(primary_key=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, db_column='usuario_id')
@@ -62,9 +63,6 @@ class Diagnosticos(models.Model):
     # INPUT PRINCIPAL
     descripcion_sintomas = models.TextField(blank=True, null=True)
 
-    # --- CAMPOS DE SENSORES ELIMINADOS ---
-    # Se eliminaron: sensor_rpm, sensor_presion_aceite, etc.
-    # para alinear con la Tesis de Diagnóstico Predictivo.
 
     # OUTPUTS DE LA IA (AZURE)
     ia_falla_predicha = models.CharField(max_length=100, blank=True, null=True)
