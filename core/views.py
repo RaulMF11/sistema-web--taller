@@ -50,14 +50,16 @@ def crear_diagnostico(request):
             endpoint_url = os.getenv('AZURE_ML_ENDPOINT')
             api_key = os.getenv('AZURE_ML_KEY')
             
-            if not endpoint_url or not api_key:
-                messages.error(request, "Error: Faltan credenciales de Azure en .env")
+            if not endpoint_url:
+                messages.error(request, "Error: Falta el endpoint del modelo en .env")
                 return redirect('crear_diagnostico')
 
-            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
+            headers = {'Content-Type': 'application/json'}
+            if api_key:
+                headers['Authorization'] = f'Bearer {api_key}'
 
             try:
-                request_data = {"data": [payload]} 
+                request_data = {"data": [payload]}
                 response = requests.post(endpoint_url, json=request_data, headers=headers, timeout=20)
                 
                 if response.status_code == 200:

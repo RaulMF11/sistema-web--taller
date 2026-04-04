@@ -29,7 +29,7 @@ class DiagnosticoForm(forms.ModelForm):
     # NUEVO CAMPO: Propietario (UI)
     propietario = forms.CharField(
         label="Nombre del Cliente (Propietario)",
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'})
     )
     
@@ -52,10 +52,10 @@ class DiagnosticoForm(forms.ModelForm):
             'modelo': forms.HiddenInput(attrs={'id': 'id_modelo_texto'}),
             
             # FORMATO Y ESTILOS
-            'anio': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2015'}),
-            'kilometraje': forms.NumberInput(attrs={'class': 'form-control'}),
-            'ultimo_mantenimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'descripcion_sintomas': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Describe el ruido, olor o comportamiento...'}),
+            'anio': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2015', 'required': True}),
+            'kilometraje': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
+            'ultimo_mantenimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': True}),
+            'descripcion_sintomas': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Describe el ruido, olor o comportamiento...', 'required': True}),
         }
         
         # EXCLUIMOS lo que no queremos en el form

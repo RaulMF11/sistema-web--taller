@@ -26,11 +26,11 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label class="form-label">Marca</label>
+                                <label class="form-label">Marca <span class="text-danger">*</span></label>
                                 {{ form.marca_select }}
                                 {{ form.marca }} </div>
                             <div class="col-md-6">
-                                <label class="form-label">Modelo</label>
+                                <label class="form-label">Modelo <span class="text-danger">*</span></label>
                                 {{ form.modelo_select }}
                                 {{ form.modelo }} </div>
                             
@@ -46,7 +46,7 @@
                         </div>
 
                         <div class="bg-light p-4 rounded-3 border mb-4">
-                            <h5 class="text-danger mb-3"><i class="fas fa-stethoscope me-2"></i>Descripción de Síntomas</h5>
+                            <h5 class="text-danger mb-3"><i class="fas fa-stethoscope me-2"></i>Descripción de Síntomas <span class="text-danger">*</span></h5>
                             <div class="alert alert-warning small py-2">
                                 <i class="fas fa-lightbulb me-1"></i> Tip: Describe ruidos (chillido, golpe), sensaciones (vibración, jaloneo) y cuándo ocurre (al frenar, en frío).
                             </div>
@@ -116,12 +116,14 @@
         const btnText = document.getElementById("btnText");
         const btnSpinner = document.getElementById("btnSpinner");
 
-        // --- 1. LÓGICA DE DROPDOWNS EN CASCADA ---
-        
-        // Estado inicial: Bloquear modelo si no hay marca
-        if (!selectMarca.value) {
-            selectModelo.innerHTML = '<option value="">Primero selecciona marca</option>';
-            selectModelo.disabled = true;
+        // Esperar a que el DOM esté listo
+        if (selectMarca) {
+            selectMarca.setAttribute('required', 'required');
+            selectMarca.classList.add('form-select');
+        }
+        if (selectModelo) {
+            selectModelo.setAttribute('required', 'required');
+            selectModelo.classList.add('form-select');
         }
 
         // Escuchar cambios en la MARCA
@@ -243,7 +245,23 @@ if(inputPlaca){
 
         // --- 3. UI AL ENVIAR EL FORMULARIO ---
         if (form) {
-            form.addEventListener("submit", function () {
+            form.addEventListener("submit", function (e) {
+                // Validar que marca_select tenga valor
+                if (!selectMarca.value) {
+                    e.preventDefault();
+                    selectMarca.classList.add('is-invalid');
+                    alert('Por favor selecciona una Marca');
+                    return false;
+                }
+                
+                // Validar que modelo_select tenga valor
+                if (!selectModelo.value) {
+                    e.preventDefault();
+                    selectModelo.classList.add('is-invalid');
+                    alert('Por favor selecciona un Modelo');
+                    return false;
+                }
+
                 // Desbloquear campos para que se envíen en el POST
                 if(selectMarca) selectMarca.disabled = false;
                 if(selectModelo) selectModelo.disabled = false;
